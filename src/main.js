@@ -1,3 +1,6 @@
+// Version marker: check the browser console for this line to be sure the NEW file is the one loading
+console.info("[hero-animations] v4 loaded", { gsap: typeof gsap, ScrollTrigger: typeof ScrollTrigger, MotionPathPlugin: typeof MotionPathPlugin, Lenis: typeof Lenis });
+
 // Register whichever GSAP plugins are loaded on the page (skips any that aren't,
 // so a missing plugin can never stop the rest of this file from running)
 if (window.gsap) {
@@ -810,6 +813,169 @@ if (window.gsap) {
       }
     };
   }
+})();
+
+
+/* =========================================================
+   HERO INTRO + PARALLAX
+   Order: canvas box grows open -> nav -> moon, webs, servers
+   -> title letters -> bat flies in -> ghost -> logo, copy, button
+   -> mouse parallax switches on.
+   ========================================================= */
+(function () {
+  const root = document.documentElement;
+  const $  = function (s) { return document.querySelector(s); };
+  const $$ = function (s) { return Array.prototype.slice.call(document.querySelectorAll(s)); };
+
+  const canvas = $(".hero_canvas");
+  if (!canvas || typeof gsap === "undefined") { root.classList.remove("hero-intro"); return; }
+  if (window.SplitText) gsap.registerPlugin(SplitText);
+
+  const el = {
+    brand:    $(".nav-wrap .brand-link"),
+    links:    $$(".nav-wrap .nav-link"),
+    navRight: $(".nav-wrap .nav-right"),
+    moon:     $(".hero_canvas .red-moon"),
+    servers:  $(".hero_canvas .hero_servers"),
+    webs:     $(".hero_canvas .hero-bottom-webs"),
+    title:    $(".hero_canvas .hero-header h1"),
+    monster:  $(".hero_canvas .hero_monster"),       // optional: only if the hero has a monster image
+    bat:      $(".hero_canvas .bat-anim-wrap"),
+    ghost:    $(".hero_canvas .ghost-anim-wrap"),
+    logo:     $(".hero_canvas .hpe-logo"),
+    sub:      $(".hero_canvas .hero-subheader-wrap"),
+    bottom:   $(".hero_canvas .hero-header-bottom"),
+    btn:      $(".hero_canvas .hero-btn")
+  };
+  const has = function (x) { return x && (!Array.isArray(x) || x.length); };
+
+  function startBat() {
+    if (window.playBat) window.playBat(); else window.batPending = true;
+  }
+
+  // Reduced motion: show the finished hero, no intro, no parallax
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    root.classList.remove("hero-intro");
+    startBat();
+    return;
+  }
+
+  const RADIUS = "24px";   // match the hero canvas corner radius
+  const clip = function (v, h) { return "inset(" + v + "% " + h + "% " + v + "% " + h + "% round " + RADIUS + ")"; };
+
+  function build() {
+    // Split the title into letters (words kept together so lines don't break mid-word)
+    let chars = [];
+    if (has(el.title) && window.SplitText) {
+      const split = new SplitText(el.title, { type: "words,chars", wordsClass: "hero-word", charsClass: "hero-char" });
+      chars = split.chars;
+    }
+
+    // ---------- start states (everything hidden) ----------
+    canvas.style.clipPath = clip(50, 50);
+    if (has(el.brand))    gsap.set(el.brand,    { autoAlpha: 0, y: -24 });
+    if (has(el.links))    gsap.set(el.links,    { autoAlpha: 0, y: -16 });
+    if (has(el.navRight)) gsap.set(el.navRight, { autoAlpha: 0, scale: 0.85 });
+    if (has(el.moon))     gsap.set(el.moon,     { autoAlpha: 0, scale: 0.4, rotate: -25 });
+    if (has(el.webs))     gsap.set(el.webs,     { autoAlpha: 0 });
+    if (has(el.servers))  gsap.set(el.servers,  { autoAlpha: 0, yPercent: 35 });
+    if (has(el.title))    gsap.set(el.title,    { autoAlpha: 1 });
+    if (chars.length)     gsap.set(chars,       { autoAlpha: 0, yPercent: 60, scale: 0.5 });
+    if (has(el.monster))  gsap.set(el.monster,  { autoAlpha: 0, scale: 0, rotate: -20, transformOrigin: "50% 100%" });
+    if (has(el.ghost))    gsap.set(el.ghost,    { autoAlpha: 0, yPercent: 12 });
+    if (has(el.logo))     gsap.set(el.logo,     { autoAlpha: 0, x: -30 });
+    const subLines = has(el.sub) ? (el.sub.children.length ? Array.prototype.slice.call(el.sub.children) : [el.sub]) : [];
+    if (has(el.sub))      gsap.set(el.sub,      { autoAlpha: 1 });
+    if (subLines.length)  gsap.set(subLines,    { autoAlpha: 0, y: 20 });
+    if (has(el.btn))      gsap.set(el.btn,      { autoAlpha: 0, scale: 0.8 });
+
+    root.classList.remove("hero-intro");   // GSAP owns visibility from here
+
+    // ---------- the sequence ----------
+    const tl = gsap.timeline({ defaults: { ease: "power3.out" }, onComplete: enableParallax });
+
+    // 1. Canvas grows from nothing at the centre out to full size in all four directions.
+    //    (tweening plain numbers and writing the clip-path ourselves keeps all 4 sides in sync)
+    const box = { v: 50, h: 50 };
+    const drawBox = function () { canvas.style.clipPath = clip(box.v, box.h); };
+    tl.to(box, { v: 0, h: 0, duration: 1.4, ease: "power4.inOut", onUpdate: drawBox }, 0.1)
+      .call(function () { canvas.style.clipPath = ""; });
+
+    // 2. Nav drops in as the canvas finishes opening
+    const t = 1.1;
+    if (has(el.brand))    tl.to(el.brand,    { autoAlpha: 1, y: 0, duration: 0.7 }, t);
+    if (has(el.links))    tl.to(el.links,    { autoAlpha: 1, y: 0, duration: 0.6, stagger: 0.07 }, t + 0.1);
+    if (has(el.navRight)) tl.to(el.navRight, { autoAlpha: 1, scale: 1, duration: 0.7, ease: "back.out(2)" }, t + 0.35);
+
+    // 3. Scene: moon rises, webs settle, servers slide up
+    if (has(el.moon))    tl.to(el.moon,    { autoAlpha: 1, scale: 1, rotate: 0, duration: 1.4, ease: "expo.out" }, 0.85);
+    // Webs: the webs script spins them in thread by thread (window.playWebs).
+    // Without that script they just fade in.
+    if (has(el.webs)) {
+      tl.call(function () {
+        if (window.WEBS_FX) { gsap.set(el.webs, { autoAlpha: 1 }); if (window.playWebs) window.playWebs(); else window.websPending = true; }
+        else gsap.to(el.webs, { autoAlpha: 1, duration: 1.6, ease: "power2.out" });
+      }, null, 1);
+    }
+    if (has(el.servers)) tl.to(el.servers, { autoAlpha: 1, yPercent: 0, duration: 1.1 }, 1.2);
+
+    // 4. Title letters (same feel as the Webflow interaction: from 0 opacity, down, half scale, elastic)
+    if (chars.length) tl.to(chars, { autoAlpha: 1, yPercent: 0, scale: 1, duration: 1.5, ease: "elastic.out(1, 0.55)", stagger: 0.04 }, 1.4);
+
+    // 5. Characters
+    if (has(el.monster)) tl.to(el.monster, { autoAlpha: 1, scale: 1, rotate: 0, duration: 0.7, ease: "back.out(2.2)" }, 2.15);
+    tl.call(startBat, null, 2.25);                     // bat does its own fly-in + landing
+    if (has(el.ghost))   tl.to(el.ghost, { autoAlpha: 1, yPercent: 0, duration: 1.2, ease: "power2.out" }, 2.55);
+
+    // 6. Bottom row: logo, copy lines, button
+    if (has(el.logo))    tl.to(el.logo,   { autoAlpha: 1, x: 0, duration: 0.8 }, 2.65);
+    if (subLines.length) tl.to(subLines,  { autoAlpha: 1, y: 0, duration: 0.7, stagger: 0.12 }, 2.75);
+    if (has(el.btn))     tl.to(el.btn,    { autoAlpha: 1, scale: 1, duration: 0.8, ease: "back.out(2)" }, 2.95);
+  }
+
+  // ---------- mouse parallax ----------
+  // depth = how many px the layer moves at the edge of the hero.
+  // Negative = moves with the cursor (background), positive = moves away (foreground).
+  const LAYERS = [
+    [el.webs,    -10],
+    [el.moon,     14],
+    [el.servers,  22],
+    [el.title,     8],
+    [el.monster,  24],
+    [el.bat,      30],
+    [el.ghost,    26],
+    [el.bottom,    5]
+  ];
+  let parallaxOn = false, movers = [];
+
+  function enableParallax() {
+    movers = LAYERS.filter(function (l) { return has(l[0]); }).map(function (l) {
+      return {
+        d: l[1],
+        x: gsap.quickTo(l[0], "x", { duration: 0.9, ease: "power3.out" }),
+        y: gsap.quickTo(l[0], "y", { duration: 0.9, ease: "power3.out" })
+      };
+    });
+    parallaxOn = true;
+  }
+
+  function moveLayers(nx, ny) {
+    movers.forEach(function (m) { m.x(-nx * m.d); m.y(-ny * m.d * 0.6); });
+  }
+
+  window.addEventListener("pointermove", function (e) {
+    if (!parallaxOn || e.pointerType === "touch") return;
+    const r = canvas.getBoundingClientRect();
+    if (e.clientY > r.bottom || e.clientY < r.top - 120) { moveLayers(0, 0); return; }   // cursor left the hero
+    const nx = gsap.utils.clamp(-1, 1, ((e.clientX - r.left) / r.width  - 0.5) * 2);
+    const ny = gsap.utils.clamp(-1, 1, ((e.clientY - r.top)  / r.height - 0.5) * 2);
+    moveLayers(nx, ny);
+  }, { passive: true });
+  document.documentElement.addEventListener("mouseleave", function () { if (parallaxOn) moveLayers(0, 0); });
+
+  // Wait for the web fonts so the title splits at the right letter widths
+  const go = function () { (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(build); };
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", go); else go();
 })();
 
 
