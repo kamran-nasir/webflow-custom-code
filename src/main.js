@@ -806,3 +806,63 @@
     };
   }
 })();
+
+
+/* =========================================================
+   HERO PARALLAX
+   - Hero layers drift at different speeds as you scroll down (and back up)
+   - Uses the CSS `translate` property, not `transform`, so it stacks on top of the
+     GSAP intro / idle animations on the same elements instead of overwriting them
+   - Speed: 0.3 = moves 30% slower than the page (feels far away),
+            -0.2 = moves 20% faster (feels close), 0 = no parallax
+   - In Webflow, add data-parallax="0.3" to any hero element to include it or
+     override its speed. Add data-parallax-hero to the section to use it as the
+     trigger (defaults to the section around .hero_canvas).
+   ========================================================= */
+(function () {
+  if (typeof gsap === "undefined" || typeof ScrollTrigger === "undefined") return;
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  gsap.registerPlugin(ScrollTrigger);
+
+  const canvas = document.querySelector(".hero_canvas");
+  const hero = document.querySelector("[data-parallax-hero]") ||
+               (canvas && (canvas.closest("section") || canvas));
+  if (!hero) return;
+
+  // Default speeds for the known hero layers (a data-parallax attribute wins)
+  const DEFAULTS = [
+    [".hero_servers",      0.25],   // the rack sits back in the scene
+    ["#batWrap",           0.45],   // bat hangs back the most
+    [".hero-bottom-webs", -0.12]    // webs are in the foreground
+  ];
+
+  const layers = new Map();
+  DEFAULTS.forEach(function (d) {
+    const el = document.querySelector(d[0]);
+    if (el) layers.set(el, d[1]);
+  });
+  document.querySelectorAll("[data-parallax]").forEach(function (el) {
+    const speed = parseFloat(el.dataset.parallax);
+    if (!isNaN(speed)) layers.set(el, speed);
+  });
+  if (!layers.size) return;
+
+  const items = [];
+  layers.forEach(function (speed, el) {
+    el.style.willChange = "translate";
+    items.push({ el: el, speed: speed });
+  });
+
+  ScrollTrigger.create({
+    trigger: hero,
+    start: "top top",
+    end: "bottom top",
+    scrub: true,                    // Lenis already smooths the scroll
+    onUpdate: function (self) {
+      const dist = self.progress * (self.end - self.start);
+      items.forEach(function (it) {
+        it.el.style.translate = "0 " + (dist * it.speed).toFixed(1) + "px";
+      });
+    }
+  });
+})();
