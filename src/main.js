@@ -1,5 +1,3 @@
-
-
 (function () {
   // No smooth scroll for people who asked for less motion
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
