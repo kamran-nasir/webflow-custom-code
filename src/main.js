@@ -1,5 +1,5 @@
 // Version marker: check the browser console for this line to be sure the NEW file is the one loading
-console.info("[hero-animations] v4 loaded", { gsap: typeof gsap, ScrollTrigger: typeof ScrollTrigger, MotionPathPlugin: typeof MotionPathPlugin, Lenis: typeof Lenis });
+console.info("[hero-animations] v5 loaded", { gsap: typeof gsap, ScrollTrigger: typeof ScrollTrigger, MotionPathPlugin: typeof MotionPathPlugin, Lenis: typeof Lenis });
 
 // Register whichever GSAP plugins are loaded on the page (skips any that aren't,
 // so a missing plugin can never stop the rest of this file from running)
@@ -277,39 +277,45 @@ if (window.gsap) {
 })();
 
 
+/* GHOST — works for every ghost on the page (hero, footer, ...).
+   Each one: <div class="ghost_scene"><div class="ghost_wrap" data-svg="...ghost-anim.svg"></div></div> */
 (function () {
-  const scene = document.getElementById("ghostScene");
-  if (!scene) return;
-  const slot = scene.querySelector("[data-svg]");
+  const scenes = document.querySelectorAll(".ghost_scene");
+  if (!scenes.length || typeof gsap === "undefined") return;
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  // Load the SVG inline so the script can reach the tail wave and pupils.
-  // If loading fails, fall back to a plain image (static, fully visible).
-  fetch(slot.dataset.svg)
-    .then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); })
-    .then(function (txt) {
-      slot.innerHTML = txt;
-      const svg = slot.querySelector("svg");
-      svg.removeAttribute("width");
-      svg.removeAttribute("height");
-      init();
-    })
-    .catch(function (err) {
-      console.warn("Ghost SVG could not be loaded inline:", err);
-      slot.innerHTML = '<img src="' + slot.dataset.svg + '" alt="">';
-    });
+  scenes.forEach(function (scene, n) {
+    const slot = scene.querySelector("[data-svg]");
+    if (!slot) return;
 
-  function init() {
+    // Load the SVG inline so the script can reach the tail wave and pupils.
+    // If loading fails, fall back to a plain image (static, fully visible).
+    fetch(slot.dataset.svg)
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); })
+      .then(function (txt) {
+        // Give this copy its own IDs, so two ghosts on one page don't share a filter/clip
+        txt = txt.replace(/id="([^"]+)"/g, 'id="$1-g' + n + '"').replace(/url\(#([^)]+)\)/g, "url(#$1-g" + n + ")");
+        slot.innerHTML = txt;
+        const svg = slot.querySelector("svg");
+        svg.removeAttribute("width");
+        svg.removeAttribute("height");
+        init(scene);
+      })
+      .catch(function (err) {
+        console.warn("Ghost SVG could not be loaded inline:", err);
+        slot.innerHTML = '<img src="' + slot.dataset.svg + '" alt="">';
+      });
+  });
+
+  function init(scene) {
     const wrap   = scene.querySelector(".ghost_wrap");
     const tail   = scene.querySelector(".ghost_tail-wave");     // feDisplacementMap
     const pupils = scene.querySelectorAll(".ghost_pupil");
+    const looks  = scene.querySelectorAll(".ghost_look");
 
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      gsap.set(wrap, { opacity: 1 });               // resting frame: fully visible, no motion
-      return;
-    }
+    if (reduce) { gsap.set(wrap, { opacity: 1 }); return; }     // resting frame: fully visible, no motion
 
     // Eyes follow the cursor when it comes near (adds on top of the stopwatch glance)
-    const looks = scene.querySelectorAll(".ghost_look");
     const FOLLOW_RADIUS = 450;          // px from the ghost's eyes where it starts watching
     const MAX_X = 4, MAX_Y = 3.5;       // how far the pupils can move (SVG units)
     const lookX = gsap.quickTo(looks, "x", { duration: 0.35, ease: "power3.out" });
@@ -328,21 +334,25 @@ if (window.gsap) {
     document.documentElement.addEventListener("mouseleave", function () { lookX(0); lookY(0); });
 
     // Tail wave: the lower hem sways side to side (2s per sway, 3 per loop, so it stays seamless)
-    gsap.fromTo(tail, { attr: { scale: -18 } }, { attr: { scale: 18 }, duration: 1, ease: "sine.inOut", yoyo: true, repeat: -1 });
+    const tailTween = gsap.fromTo(tail, { attr: { scale: -18 } }, { attr: { scale: 18 }, duration: 1, ease: "sine.inOut", yoyo: true, repeat: -1 });
 
     // 6s seamless loop, timings from the brief
     const tl = gsap.timeline({ repeat: -1 });
     tl.set(wrap, { opacity: 0.1, y: 0 }, 0)
-      // 1. Fade in (0–1.5s)
-      .to(wrap, { opacity: 1, duration: 1.5, ease: "sine.inOut" }, 0)
-      // 2. Hold visible (1.5–3.5s): gentle 5px bob + quick glance at the stopwatch
-      .to(wrap, { y: -5, duration: 1, ease: "sine.inOut", yoyo: true, repeat: 1 }, 1.5)
-      .to(pupils, { x: 4, y: 5, duration: 0.2, ease: "power2.out" }, 2.0)
+      .to(wrap, { opacity: 1, duration: 1.5, ease: "sine.inOut" }, 0)                         // 1. fade in
+      .to(wrap, { y: -5, duration: 1, ease: "sine.inOut", yoyo: true, repeat: 1 }, 1.5)        // 2. hold + bob
+      .to(pupils, { x: 4, y: 5, duration: 0.2, ease: "power2.out" }, 2.0)                     //    glance at the watch
       .to(pupils, { x: 0, y: 0, duration: 0.25, ease: "power2.inOut" }, 2.9)
-      // 3. Fade out (3.5–5s), never below 10%
-      .to(wrap, { opacity: 0.1, duration: 1.5, ease: "sine.inOut" }, 3.5)
-      // 4. Hold faded (5–6s)
-      .to({}, { duration: 1 }, 5);
+      .to(wrap, { opacity: 0.1, duration: 1.5, ease: "sine.inOut" }, 3.5)                     // 3. fade out
+      .to({}, { duration: 1 }, 5);                                                             // 4. hold faded
+
+    // Only run while this ghost is on screen (saves work for the footer one)
+    if ("IntersectionObserver" in window) {
+      new IntersectionObserver(function (entries) {
+        const on = entries[0].isIntersecting;
+        [tl, tailTween].forEach(function (t) { on ? t.resume() : t.pause(); });
+      }).observe(scene);
+    }
   }
 })();
 
