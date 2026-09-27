@@ -7,7 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "esbuild src/main.js --bundle --minify --outfile=dist/main.min.js",
     "watch": "esbuild src/main.js --bundle --minify --outfile=dist/main.min.js --watch",
-    "deploy": "npm run build && git add -A && git commit -m 'Deploy Webflow JS' && git push"
+    "deploy": "npm run build && git add -A && (git diff --cached --quiet || git commit -m 'Deploy Webflow JS') && git push"
   },
   "keywords": [],
   "author": "",
