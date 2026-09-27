@@ -1,5 +1,6 @@
-
-
+// Register the GSAP plugins once, before anything uses them
+// (the underline draw below uses ScrollTrigger before the monster script registers it)
+if (window.gsap) gsap.registerPlugin(ScrollTrigger, MotionPathPlugin);
 (function () {
   // No smooth scroll for people who asked for less motion
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -809,60 +810,63 @@
 
 
 /* =========================================================
-   HERO PARALLAX
-   - Hero layers drift at different speeds as you scroll down (and back up)
-   - Uses the CSS `translate` property, not `transform`, so it stacks on top of the
-     GSAP intro / idle animations on the same elements instead of overwriting them
-   - Speed: 0.3 = moves 30% slower than the page (feels far away),
-            -0.2 = moves 20% faster (feels close), 0 = no parallax
-   - In Webflow, add data-parallax="0.3" to any hero element to include it or
-     override its speed. Add data-parallax-hero to the section to use it as the
-     trigger (defaults to the section around .hero_canvas).
+   HERO SCROLL PARALLAX
+   As the hero scrolls away, each layer moves at its own speed
+   (far things lag behind, near things rush up), and it all
+   reverses when you scroll back up.
+   Uses the CSS `translate` property, so it never fights the
+   mouse parallax (x/y) or the intro animations (yPercent/scale).
+   Put this at the END of the file (after the servers/webs scripts).
    ========================================================= */
 (function () {
   if (typeof gsap === "undefined" || typeof ScrollTrigger === "undefined") return;
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   gsap.registerPlugin(ScrollTrigger);
 
+  const hero   = document.querySelector(".hero_section") || document.querySelector(".hero-section");
   const canvas = document.querySelector(".hero_canvas");
-  const hero = document.querySelector("[data-parallax-hero]") ||
-               (canvas && (canvas.closest("section") || canvas));
-  if (!hero) return;
+  if (!hero || !canvas) return;
+  const q = function (s) { return canvas.querySelector(s); };
 
-  // Default speeds for the known hero layers (a data-parallax attribute wins)
-  const DEFAULTS = [
-    [".hero_servers",      0.25],   // the rack sits back in the scene
-    ["#batWrap",           0.45],   // bat hangs back the most
-    [".hero-bottom-webs", -0.12]    // webs are in the foreground
-  ];
+  // [element, how far it travels as the hero scrolls out, in % of the hero height]
+  // negative = moves up faster than the page (feels close), positive = lags behind (feels far)
+  const LAYERS = [
+    [q(".red-moon"),            18],
+    [q(".hero_servers"),         8],
+    [q(".hero-bottom-webs"),    -6],
+    [q(".hero-header h1"),     -14],
+    [q(".ghost-anim-wrap"),    -24],
+    [q(".bat-anim-wrap"),      -30],
+    [q(".hero_monster"),       -26],
+    [q(".hero-header-bottom"), -10]
+  ].filter(function (l) { return l[0]; });
 
-  const layers = new Map();
-  DEFAULTS.forEach(function (d) {
-    const el = document.querySelector(d[0]);
-    if (el) layers.set(el, d[1]);
-  });
-  document.querySelectorAll("[data-parallax]").forEach(function (el) {
-    const speed = parseFloat(el.dataset.parallax);
-    if (!isNaN(speed)) layers.set(el, speed);
-  });
-  if (!layers.size) return;
+  const mm = gsap.matchMedia();
+  mm.add({
+    desktop: "(min-width: 768px) and (prefers-reduced-motion: no-preference)",
+    mobile:  "(max-width: 767px) and (prefers-reduced-motion: no-preference)"
+  }, function (ctx) {
+    const k = ctx.conditions.desktop ? 1 : 0.5;          // half the movement on phones
+    const tl = gsap.timeline({
+      defaults: { ease: "none" },
+      scrollTrigger: {
+        trigger: hero,
+        start: "top top",          // starts as soon as you scroll
+        end: "bottom top",         // done when the hero has left the screen
+        scrub: 0.6,                // small lag = extra smooth (works with Lenis)
+        invalidateOnRefresh: true  // recalculates on resize
+      }
+    });
 
-  const items = [];
-  layers.forEach(function (speed, el) {
-    el.style.willChange = "translate";
-    items.push({ el: el, speed: speed });
-  });
+    LAYERS.forEach(function (l) {
+      const el = l[0], pct = l[1] * k;
+      tl.fromTo(el, { translate: "0px 0px" },
+        { translate: function () { return "0px " + (hero.offsetHeight * pct / 100) + "px"; } }, 0);
+    });
 
-  ScrollTrigger.create({
-    trigger: hero,
-    start: "top top",
-    end: "bottom top",
-    scrub: true,                    // Lenis already smooths the scroll
-    onUpdate: function (self) {
-      const dist = self.progress * (self.end - self.start);
-      items.forEach(function (it) {
-        it.el.style.translate = "0 " + (dist * it.speed).toFixed(1) + "px";
-      });
-    }
+    // Title and bottom copy fade a little as they leave; the whole canvas eases back
+    tl.fromTo(q(".hero-header h1"), { opacity: 1 }, { opacity: 0.3 }, 0)
+      .fromTo(canvas, { scale: 1 }, { scale: 0.94, transformOrigin: "50% 0%" }, 0);
+
+    return function () { gsap.set(LAYERS.map(function (l) { return l[0]; }).concat(canvas), { clearProps: "translate,scale" }); };
   });
 })();
