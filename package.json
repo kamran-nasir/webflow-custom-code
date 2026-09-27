@@ -6,13 +6,14 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "esbuild src/main.js --bundle --minify --outfile=dist/main.min.js",
-    "watch": "esbuild src/main.js --bundle --minify --outfile=dist/main.min.js --watch",
+    "watch": "chokidar 'src/**/*.js' -c './scripts/auto-release.sh' --debounce 2000",
     "deploy": "npm run build && git add -A && (git diff --cached --quiet || git commit -m 'Deploy Webflow JS') && git push"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "chokidar-cli": "^3.0.0",
     "esbuild": "^0.28.2"
   }
 }
