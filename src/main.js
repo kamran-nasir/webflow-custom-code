@@ -1,5 +1,5 @@
 // Version marker: check the browser console for this line to be sure the NEW file is the one loading
-console.info("[hero-animations] v5 loaded", { gsap: typeof gsap, ScrollTrigger: typeof ScrollTrigger, MotionPathPlugin: typeof MotionPathPlugin, Lenis: typeof Lenis });
+console.info("[hero-animations] v6 loaded", { gsap: typeof gsap, ScrollTrigger: typeof ScrollTrigger, MotionPathPlugin: typeof MotionPathPlugin, Lenis: typeof Lenis });
 
 // Register whichever GSAP plugins are loaded on the page (skips any that aren't,
 // so a missing plugin can never stop the rest of this file from running)
@@ -419,7 +419,13 @@ if (window.gsap) {
     }, { passive: true });
     document.documentElement.addEventListener("mouseleave", stopTracking);
 
-    const HIDDEN = { xPercent: -76, yPercent: 22, rotate: 2 };   // tucked fully behind the card
+    // Rest angle comes from your CSS (8deg on desktop, whatever you set on mobile)
+    const REST_ROT = gsap.getProperty(layer, "rotate") || 0;
+    // Desktop: tucked behind the card and pops out. Mobile: waits off the right edge and slides in.
+    const isMobile = window.matchMedia("(max-width: 767px)").matches;
+    const HIDDEN = isMobile
+      ? { xPercent: 140, yPercent: 0, rotate: REST_ROT + 25 }
+      : { xPercent: -76, yPercent: 22, rotate: 2 };
     let idle = [];
 
     function killIdle() { idle.forEach(function (t) { t.kill(); }); idle = []; }
@@ -427,7 +433,7 @@ if (window.gsap) {
     function restPose() {
       killIdle();
       gsap.killTweensOf([layer, body, armL, armR, pupils]);
-      gsap.set(layer, { xPercent: 0, yPercent: 0, rotate: 8 });
+      gsap.set(layer, { xPercent: 0, yPercent: 0, rotate: REST_ROT });
       gsap.set(body, { scaleX: 1, scaleY: 1 });
       gsap.set([armL, armR], { rotate: 0, scale: 1 });
       gsap.set(pupils, { x: 0 });
@@ -464,7 +470,7 @@ if (window.gsap) {
 
       // 1. Hidden: 0–0.3s
       // 2. Pop out: 0.3–0.8s, springs out to the right with a little overshoot
-      tl.to(layer, { xPercent: 0, yPercent: 0, rotate: 8, duration: 0.5, ease: "back.out(2.2)" }, 0.3)
+      tl.to(layer, { xPercent: 0, yPercent: 0, rotate: REST_ROT, duration: isMobile ? 0.7 : 0.5, ease: isMobile ? "back.out(1.6)" : "back.out(2.2)" }, 0.3)
         .fromTo(body, { scaleY: 0.92, scaleX: 1.05 }, { scaleY: 1, scaleX: 1, duration: 0.5, ease: "back.out(3)" }, 0.3);
 
       // 3. Grab: 0.8–1.2s, arms swing in and clamp, slight squeeze
