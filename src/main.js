@@ -1,5 +1,5 @@
 // Version marker: check the browser console for this line to be sure the NEW file is the one loading
-console.info("[hero-animations] v6 loaded", { gsap: typeof gsap, ScrollTrigger: typeof ScrollTrigger, MotionPathPlugin: typeof MotionPathPlugin, Lenis: typeof Lenis });
+console.info("[hero-animations] v7 loaded", { gsap: typeof gsap, ScrollTrigger: typeof ScrollTrigger, MotionPathPlugin: typeof MotionPathPlugin, Lenis: typeof Lenis });
 
 // Register whichever GSAP plugins are loaded on the page (skips any that aren't,
 // so a missing plugin can never stop the rest of this file from running)
@@ -1019,14 +1019,14 @@ if (window.gsap) {
   // [element, how far it travels as the hero scrolls out, in % of the hero height]
   // negative = moves up faster than the page (feels close), positive = lags behind (feels far)
   const LAYERS = [
-    [q(".red-moon"),            18],
-    [q(".hero_servers"),         8],
-    [q(".hero-bottom-webs"),    -6],
-    [q(".hero-header h1"),     -14],
-    [q(".ghost-anim-wrap"),    -24],
-    [q(".bat-anim-wrap"),      -30],
-    [q(".hero_monster"),       -26],
-    [q(".hero-header-bottom"), -10]
+    [q(".red-moon"),             6],
+    [q(".hero_servers"),         3],
+    [q(".hero-bottom-webs"),    -2],
+    [q(".hero-header h1"),      -5],
+    [q(".ghost-anim-wrap"),     -8],
+    [q(".bat-anim-wrap"),      -10],
+    [q(".hero_monster"),        -9],
+    [q(".hero-header-bottom"),  -3]
   ].filter(function (l) { return l[0]; });
 
   const mm = gsap.matchMedia();
@@ -1034,14 +1034,14 @@ if (window.gsap) {
     desktop: "(min-width: 768px) and (prefers-reduced-motion: no-preference)",
     mobile:  "(max-width: 767px) and (prefers-reduced-motion: no-preference)"
   }, function (ctx) {
-    const k = ctx.conditions.desktop ? 1 : 0.5;          // half the movement on phones
+    const k = ctx.conditions.desktop ? 1 : 0.4;          // even less movement on phones
     const tl = gsap.timeline({
       defaults: { ease: "none" },
       scrollTrigger: {
         trigger: hero,
         start: "top top",          // starts as soon as you scroll
         end: "bottom top",         // done when the hero has left the screen
-        scrub: 0.6,                // small lag = extra smooth (works with Lenis)
+        scrub: 1,                  // a touch more lag = softer, smoother follow (works with Lenis)
         invalidateOnRefresh: true  // recalculates on resize
       }
     });
@@ -1054,8 +1054,8 @@ if (window.gsap) {
 
     // Title fades a little as it leaves; the whole canvas eases back
     const title = q(".hero-header h1");
-    if (title) tl.fromTo(title, { opacity: 1 }, { opacity: 0.3 }, 0);
-    tl.fromTo(canvas, { scale: 1 }, { scale: 0.94, transformOrigin: "50% 0%" }, 0);
+    if (title) tl.fromTo(title, { opacity: 1 }, { opacity: 0.75 }, 0);
+    tl.fromTo(canvas, { scale: 1 }, { scale: 0.98, transformOrigin: "50% 0%" }, 0);
 
     return function () { gsap.set(LAYERS.map(function (l) { return l[0]; }).concat(canvas), { clearProps: "translate,scale" }); };
   });
