@@ -1,5 +1,5 @@
 // Version marker: check the browser console for this line to be sure the NEW file is the one loading
-console.info("[hero-animations] v7 loaded", { gsap: typeof gsap, ScrollTrigger: typeof ScrollTrigger, MotionPathPlugin: typeof MotionPathPlugin, Lenis: typeof Lenis });
+console.info("[hero-animations] v8 loaded", { gsap: typeof gsap, ScrollTrigger: typeof ScrollTrigger, MotionPathPlugin: typeof MotionPathPlugin, Lenis: typeof Lenis });
 
 // Register whichever GSAP plugins are loaded on the page (skips any that aren't,
 // so a missing plugin can never stop the rest of this file from running)
@@ -1059,4 +1059,87 @@ if (window.gsap) {
 
     return function () { gsap.set(LAYERS.map(function (l) { return l[0]; }).concat(canvas), { clearProps: "translate,scale" }); };
   });
+})();
+
+/* =========================================================
+   SECTION REVEALS
+   Add these classes (or attributes) in Webflow:
+     has-label-anim    -> fades up
+     has-heading-anim  -> letters pop in, same effect as the hero title
+     has-text-anim     -> fades up
+   Each section plays once when it scrolls into view, in reading order:
+     label -> heading (starts before the label finishes) -> text (starts mid-heading)
+   Elements inside the hero are skipped (the hero intro animates those).
+   ========================================================= */
+(function () {
+  if (typeof gsap === "undefined" || typeof ScrollTrigger === "undefined") return;
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+  const SEL = {
+    label:   ".has-label-anim, [has-label-anim]",
+    heading: ".has-heading-anim, [has-heading-anim]",
+    text:    ".has-text-anim, [has-text-anim]"
+  };
+  const FADE_FROM = { autoAlpha: 0, y: 24 };
+  const find = function (sel) {
+    return Array.prototype.filter.call(document.querySelectorAll(sel), function (el) { return !el.closest(".hero_canvas"); });
+  };
+  const all = find(SEL.label + "," + SEL.heading + "," + SEL.text);
+  if (!all.length) return;
+
+  // Hide straight away so nothing flashes before its section plays
+  gsap.set(all, { autoAlpha: 0 });
+
+  // Group by section (or by parent when an element isn't inside a <section>)
+  const groups = new Map();
+  all.forEach(function (el) {
+    const section = el.closest("section, [data-anim-section]") || el.parentElement;
+    if (!groups.has(section)) groups.set(section, []);
+    groups.get(section).push(el);
+  });
+
+  function build() {
+    groups.forEach(function (els, section) {
+      const pick = function (sel) { return els.filter(function (el) { return el.matches(sel); }); };
+      const labels = pick(SEL.label), headings = pick(SEL.heading), texts = pick(SEL.text);
+
+      const tl = gsap.timeline({
+        paused: true,
+        scrollTrigger: { trigger: section, start: "top 75%", once: true }
+      });
+      let t = 0;
+
+      // 1. Label
+      if (labels.length) {
+        tl.fromTo(labels, FADE_FROM, { autoAlpha: 1, y: 0, duration: 0.7, ease: "power3.out", stagger: 0.1 }, t);
+        t += 0.2;
+      }
+
+      // 2. Heading: letters pop in (hero title effect); plain fade up if SplitText isn't on the page
+      if (headings.length) {
+        if (window.SplitText) {
+          headings.forEach(function (h, i) {
+            const chars = new SplitText(h, { type: "words,chars", wordsClass: "reveal-word", charsClass: "reveal-char" }).chars;
+            gsap.set(h, { autoAlpha: 1 });
+            gsap.set(chars, { autoAlpha: 0, yPercent: 60, scale: 0.5 });
+            tl.to(chars, { autoAlpha: 1, yPercent: 0, scale: 1, duration: 1.5, ease: "elastic.out(1, 0.55)",
+              stagger: { amount: Math.min(chars.length * 0.04, 0.9) } }, t + i * 0.15);   // long headings don't drag on
+          });
+        } else {
+          tl.fromTo(headings, FADE_FROM, { autoAlpha: 1, y: 0, duration: 0.9, ease: "power3.out", stagger: 0.15 }, t);
+        }
+        t += 0.5;
+      }
+
+      // 3. Paragraph(s)
+      if (texts.length) {
+        tl.fromTo(texts, FADE_FROM, { autoAlpha: 1, y: 0, duration: 0.8, ease: "power3.out", stagger: 0.12 }, t);
+      }
+    });
+    ScrollTrigger.refresh();
+  }
+
+  // Wait for the web fonts so headings split at the right letter widths
+  const go = function () { (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(build); };
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", go); else go();
 })();
