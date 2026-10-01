@@ -1,5 +1,5 @@
 // Version marker: check the browser console for this line to be sure the NEW file is the one loading
-console.info("[hero-animations] v15 loaded", { gsap: typeof gsap, ScrollTrigger: typeof ScrollTrigger, MotionPathPlugin: typeof MotionPathPlugin, Lenis: typeof Lenis });
+console.info("[hero-animations] v16 loaded", { gsap: typeof gsap, ScrollTrigger: typeof ScrollTrigger, MotionPathPlugin: typeof MotionPathPlugin, Lenis: typeof Lenis });
 
 // Register whichever GSAP plugins are loaded on the page (skips any that aren't,
 // so a missing plugin can never stop the rest of this file from running)
@@ -896,3 +896,12 @@ if (window.gsap) {
   const go = function () { (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(build); };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", go); else go();
 })();
+
+
+/* =========================================================
+   PRE-HIDE HAND-OFF
+   The Webflow <head> adds "anim-hide" to <html> so reveal elements and underlines
+   are hidden before the first paint (no flash). By this point every script above
+   has set its own start state inline, so the CSS guard can go.
+   ========================================================= */
+document.documentElement.classList.remove("anim-hide");
