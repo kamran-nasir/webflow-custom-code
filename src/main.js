@@ -1,5 +1,5 @@
 // Version marker: check the browser console for this line to be sure the NEW file is the one loading
-console.info("[hero-animations] v11 loaded", { gsap: typeof gsap, ScrollTrigger: typeof ScrollTrigger, MotionPathPlugin: typeof MotionPathPlugin, Lenis: typeof Lenis });
+console.info("[hero-animations] v12 loaded", { gsap: typeof gsap, ScrollTrigger: typeof ScrollTrigger, MotionPathPlugin: typeof MotionPathPlugin, Lenis: typeof Lenis });
 
 // Register whichever GSAP plugins are loaded on the page (skips any that aren't,
 // so a missing plugin can never stop the rest of this file from running)
@@ -943,6 +943,8 @@ if (window.gsap) {
     if (has(el.monster)) tl.to(el.monster, { autoAlpha: 1, scale: 1, rotate: 0, duration: 0.7, ease: "back.out(2.2)" }, 2.15);
     if (has(el.monsterL)) monsterIn(tl, el.monsterL, -1, 2.1);    // left one scurries in...
     if (has(el.monsterR)) monsterDrop(tl, el.monsterR, 2.35);     // ...right one drops from the top a beat later
+    if (has(el.monsterL)) tl.call(monsterFloat, [el.monsterL, 2.4, 0],   3.3);   // then both float, out of step
+    if (has(el.monsterR)) tl.call(monsterFloat, [el.monsterR, 2.8, 0.6], 3.5);
 
     // 6. Bottom row: logo, copy lines, button
     if (has(el.logo))    tl.to(el.logo,   { autoAlpha: 1, x: 0, duration: 0.8 }, 2.65);
@@ -951,7 +953,8 @@ if (window.gsap) {
   }
 
   // ---------- green monsters ----------
-  // Entrance only: they stay still once they've landed.
+  // Entrance, then a gentle float. The float uses yPercent/rotate so it stacks with
+  // the mouse parallax (x/y) instead of fighting it.
   // dir: -1 = comes in from the left, 1 = from the right
   function monsterIn(tl, m, dir, at) {
     tl.set(m, { autoAlpha: 1 }, at)
@@ -976,6 +979,11 @@ if (window.gsap) {
       .to(m, { y: 0, duration: 0.22, ease: "power2.in" }, at + 0.88);
   }
 
+  function monsterFloat(m, dur, delay) {
+    gsap.to(m, { yPercent: -4, duration: dur, ease: "sine.inOut", yoyo: true, repeat: -1, delay: delay });
+    gsap.fromTo(m, { rotate: -1.5 }, { rotate: 1.5, duration: dur * 1.3, ease: "sine.inOut", yoyo: true, repeat: -1, delay: delay });
+  }
+
   // ---------- mouse parallax ----------
   // depth = how many px the layer moves at the edge of the hero.
   // Negative = moves with the cursor (background), positive = moves away (foreground).
@@ -985,6 +993,8 @@ if (window.gsap) {
     [el.servers,  22],
     [el.title,     8],
     [el.monster,  24],
+    [el.monsterL, 28],
+    [el.monsterR, 32],
     [el.bottom,    5]
   ];
   let parallaxOn = false, movers = [];
