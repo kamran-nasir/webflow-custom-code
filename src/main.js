@@ -1,5 +1,5 @@
 // Version marker: check the browser console for this line to be sure the NEW file is the one loading
-console.info("[hero-animations] v10 loaded", { gsap: typeof gsap, ScrollTrigger: typeof ScrollTrigger, MotionPathPlugin: typeof MotionPathPlugin, Lenis: typeof Lenis });
+console.info("[hero-animations] v11 loaded", { gsap: typeof gsap, ScrollTrigger: typeof ScrollTrigger, MotionPathPlugin: typeof MotionPathPlugin, Lenis: typeof Lenis });
 
 // Register whichever GSAP plugins are loaded on the page (skips any that aren't,
 // so a missing plugin can never stop the rest of this file from running)
@@ -893,13 +893,11 @@ if (window.gsap) {
     if (has(el.title))    gsap.set(el.title,    { autoAlpha: 1 });
     if (chars.length)     gsap.set(chars,       { autoAlpha: 0, yPercent: 60, scale: 0.5 });
     if (has(el.monster))  gsap.set(el.monster,  { autoAlpha: 0, scale: 0, rotate: -20, transformOrigin: "50% 100%" });
-    // Green monsters wait just outside the canvas on their own side
-    const offside = function (m, dir) {
-      const r = m.getBoundingClientRect(), c = canvas.getBoundingClientRect();
-      return dir < 0 ? c.left - r.right - 40 : c.right - r.left + 40;
-    };
-    if (has(el.monsterL)) gsap.set(el.monsterL, { autoAlpha: 0, x: offside(el.monsterL, -1), transformOrigin: "50% 100%" });
-    if (has(el.monsterR)) gsap.set(el.monsterR, { autoAlpha: 0, x: offside(el.monsterR,  1), transformOrigin: "50% 100%" });
+    // Green monsters wait just outside the canvas: left one off the left edge, right one above the top
+    const offLeft = function (m) { return canvas.getBoundingClientRect().left - m.getBoundingClientRect().right - 40; };
+    const offTop  = function (m) { return canvas.getBoundingClientRect().top - m.getBoundingClientRect().bottom - 40; };
+    if (has(el.monsterL)) gsap.set(el.monsterL, { autoAlpha: 0, x: offLeft(el.monsterL), transformOrigin: "50% 100%" });
+    if (has(el.monsterR)) gsap.set(el.monsterR, { autoAlpha: 0, y: offTop(el.monsterR),  transformOrigin: "50% 100%" });
     if (has(el.logo))     gsap.set(el.logo,     { autoAlpha: 0, x: -30 });
     const subLines = has(el.sub) ? (el.sub.children.length ? Array.prototype.slice.call(el.sub.children) : [el.sub]) : [];
     if (has(el.sub))      gsap.set(el.sub,      { autoAlpha: 1 });
@@ -943,8 +941,8 @@ if (window.gsap) {
 
     // 5. Characters
     if (has(el.monster)) tl.to(el.monster, { autoAlpha: 1, scale: 1, rotate: 0, duration: 0.7, ease: "back.out(2.2)" }, 2.15);
-    if (has(el.monsterL)) monsterIn(tl, el.monsterL, -1, 2.1);    // left one first...
-    if (has(el.monsterR)) monsterIn(tl, el.monsterR,  1, 2.35);   // ...right one a beat later
+    if (has(el.monsterL)) monsterIn(tl, el.monsterL, -1, 2.1);    // left one scurries in...
+    if (has(el.monsterR)) monsterDrop(tl, el.monsterR, 2.35);     // ...right one drops from the top a beat later
 
     // 6. Bottom row: logo, copy lines, button
     if (has(el.logo))    tl.to(el.logo,   { autoAlpha: 1, x: 0, duration: 0.8 }, 2.65);
@@ -964,6 +962,18 @@ if (window.gsap) {
       // land: squash, then spring back
       .to(m, { scaleY: 0.86, scaleX: 1.1, duration: 0.12, ease: "power2.out" }, at + 0.82)
       .to(m, { scaleY: 1, scaleX: 1, duration: 0.7, ease: "elastic.out(1, 0.4)" }, at + 0.94);
+  }
+
+  // Drops in from above the canvas, lands hard with a squash and a small bounce
+  function monsterDrop(tl, m, at) {
+    tl.set(m, { autoAlpha: 1 }, at)
+      .to(m, { y: 0, duration: 0.6, ease: "power2.in" }, at)
+      .fromTo(m, { rotate: -8 }, { rotate: 0, duration: 0.6, ease: "power1.in" }, at)
+      // land: big squash, then spring back with a little hop
+      .to(m, { scaleY: 0.8, scaleX: 1.14, duration: 0.1, ease: "power2.out" }, at + 0.6)
+      .to(m, { scaleY: 1, scaleX: 1, duration: 0.8, ease: "elastic.out(1, 0.35)" }, at + 0.7)
+      .to(m, { y: -18, duration: 0.18, ease: "power2.out" }, at + 0.7)
+      .to(m, { y: 0, duration: 0.22, ease: "power2.in" }, at + 0.88);
   }
 
   // ---------- mouse parallax ----------
