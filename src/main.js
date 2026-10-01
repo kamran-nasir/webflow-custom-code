@@ -1,5 +1,5 @@
 // Version marker: check the browser console for this line to be sure the NEW file is the one loading
-console.info("[hero-animations] v9 loaded", { gsap: typeof gsap, ScrollTrigger: typeof ScrollTrigger, MotionPathPlugin: typeof MotionPathPlugin, Lenis: typeof Lenis });
+console.info("[hero-animations] v10 loaded", { gsap: typeof gsap, ScrollTrigger: typeof ScrollTrigger, MotionPathPlugin: typeof MotionPathPlugin, Lenis: typeof Lenis });
 
 // Register whichever GSAP plugins are loaded on the page (skips any that aren't,
 // so a missing plugin can never stop the rest of this file from running)
@@ -953,6 +953,7 @@ if (window.gsap) {
   }
 
   // ---------- green monsters ----------
+  // Entrance only: they stay still once they've landed.
   // dir: -1 = comes in from the left, 1 = from the right
   function monsterIn(tl, m, dir, at) {
     tl.set(m, { autoAlpha: 1 }, at)
@@ -962,24 +963,7 @@ if (window.gsap) {
       .fromTo(m, { rotate: -dir * 14 }, { rotate: 0, duration: 1, ease: "back.out(2)" }, at)
       // land: squash, then spring back
       .to(m, { scaleY: 0.86, scaleX: 1.1, duration: 0.12, ease: "power2.out" }, at + 0.82)
-      .to(m, { scaleY: 1, scaleX: 1, duration: 0.7, ease: "elastic.out(1, 0.4)" }, at + 0.94)
-      .call(monsterIdle, [m, dir], at + 1.65);
-  }
-
-  // Lurking: slow breathing, a little sway, and now and then a snarl-lean toward the title
-  function monsterIdle(m, dir) {
-    const R = gsap.utils.random;
-    gsap.to(m, { scaleY: 1.035, scaleX: 0.985, duration: 1.8, ease: "sine.inOut", yoyo: true, repeat: -1 });
-    gsap.fromTo(m, { rotate: -2 }, { rotate: 2, duration: R(2.4, 3), ease: "sine.inOut", yoyo: true, repeat: -1 });
-    (function snarl() {
-      gsap.delayedCall(R(4, 7), function () {
-        gsap.timeline()
-          .to(m, { skewX: dir * 8, duration: 0.18, ease: "power2.out" })
-          .to(m, { skewX: dir * 6, duration: 0.08, ease: "none", yoyo: true, repeat: 3 })
-          .to(m, { skewX: 0, duration: 0.6, ease: "elastic.out(1, 0.5)" });
-        snarl();
-      });
-    })();
+      .to(m, { scaleY: 1, scaleX: 1, duration: 0.7, ease: "elastic.out(1, 0.4)" }, at + 0.94);
   }
 
   // ---------- mouse parallax ----------
@@ -991,8 +975,6 @@ if (window.gsap) {
     [el.servers,  22],
     [el.title,     8],
     [el.monster,  24],
-    [el.monsterL, 28],
-    [el.monsterR, 32],
     [el.bottom,    5]
   ];
   let parallaxOn = false, movers = [];
@@ -1056,8 +1038,6 @@ if (window.gsap) {
     [q(".hero_servers"),         3],
     [q(".hero-bottom-webs"),    -2],
     [q(".hero-header h1"),      -5],
-    [q(".green-monster-left"),  -8],
-    [q(".green-monster-right"), -10],
     [q(".hero_monster"),        -9],
     [q(".hero-header-bottom"),  -3]
   ].filter(function (l) { return l[0]; });
