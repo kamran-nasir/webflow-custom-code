@@ -1,5 +1,5 @@
 // Version marker: check the browser console for this line to be sure the NEW file is the one loading
-console.info("[hero-animations] v16 loaded", { gsap: typeof gsap, ScrollTrigger: typeof ScrollTrigger, MotionPathPlugin: typeof MotionPathPlugin, Lenis: typeof Lenis });
+console.info("[hero-animations] v17 loaded", { gsap: typeof gsap, ScrollTrigger: typeof ScrollTrigger, MotionPathPlugin: typeof MotionPathPlugin, Lenis: typeof Lenis });
 
 // Register whichever GSAP plugins are loaded on the page (skips any that aren't,
 // so a missing plugin can never stop the rest of this file from running)
@@ -41,14 +41,17 @@ if (window.gsap) {
 
     const length = path.getTotalLength();
 
-    // Hide the line by offsetting its full length, then draw it in
+    // Hide the line by offsetting its full length, then draw it in.
+    // Also fully hidden until the draw starts: round line caps otherwise leave a dot.
     gsap.set(path, {
       strokeDasharray: length,
-      strokeDashoffset: length
+      strokeDashoffset: length,
+      autoAlpha: 0
     });
 
     gsap.to(path, {
       strokeDashoffset: 0,
+      onStart: function () { gsap.set(path, { autoAlpha: 1 }); },
       duration: 1.2,
       ease: "power2.out",
       scrollTrigger: {
@@ -847,7 +850,7 @@ if (window.gsap) {
     if (!lines.length) return;
     lines.forEach(function (p) {
       const len = p.getTotalLength();
-      gsap.set(p, { strokeDasharray: len, strokeDashoffset: len });
+      gsap.set(p, { strokeDasharray: len, strokeDashoffset: len, autoAlpha: 0 });   // hidden: round caps leave a dot
     });
     const order = els.concat(lines).sort(function (x, y) {
       return x.compareDocumentPosition(y) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
@@ -874,7 +877,8 @@ if (window.gsap) {
         const k = kind(el);
 
         if (k === "line") {
-          tl.to(el, { strokeDashoffset: 0, duration: 1.2, ease: "power2.out" }, t);
+          tl.set(el, { autoAlpha: 1 }, t)
+            .to(el, { strokeDashoffset: 0, duration: 1.2, ease: "power2.out" }, t);
         } else if (k === "heading" && window.SplitText) {
           // Letters pop in (hero title effect)
           const chars = new SplitText(el, { type: "words,chars", wordsClass: "reveal-word", charsClass: "reveal-char" }).chars;
