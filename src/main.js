@@ -1,5 +1,5 @@
 // Version marker: check the browser console for this line to be sure the NEW file is the one loading
-console.info("[hero-animations] v14 loaded", { gsap: typeof gsap, ScrollTrigger: typeof ScrollTrigger, MotionPathPlugin: typeof MotionPathPlugin, Lenis: typeof Lenis });
+console.info("[hero-animations] v15 loaded", { gsap: typeof gsap, ScrollTrigger: typeof ScrollTrigger, MotionPathPlugin: typeof MotionPathPlugin, Lenis: typeof Lenis });
 
 // Register whichever GSAP plugins are loaded on the page (skips any that aren't,
 // so a missing plugin can never stop the rest of this file from running)
@@ -35,6 +35,10 @@ if (window.gsap) {
 
 
   document.querySelectorAll(".underline_path").forEach((path) => {
+    // Lines in a section with reveal animations draw as part of that sequence (see SECTION REVEALS)
+    const section = path.closest("section, [data-anim-section]");
+    if (section && section.querySelector(".has-label-anim, [has-label-anim], .has-heading-anim, [has-heading-anim], .has-text-anim, [has-text-anim]")) return;
+
     const length = path.getTotalLength();
 
     // Hide the line by offsetting its full length, then draw it in
@@ -800,8 +804,10 @@ if (window.gsap) {
      has-label-anim    -> fades up
      has-heading-anim  -> letters pop in, same effect as the hero title
      has-text-anim     -> fades up
-   Each section plays once when it scrolls into view, in reading order:
-     label -> heading (starts before the label finishes) -> text (starts mid-heading)
+   Each section plays once when it scrolls into view. Elements animate one by one
+   in the order they appear on the page (top to bottom), each starting a little
+   before the previous one finishes. An .underline_path in the section draws in
+   its place in the sequence too (e.g. right after the heading above it).
    Elements inside the hero are skipped (the hero intro animates those).
    ========================================================= */
 (function () {
@@ -811,13 +817,16 @@ if (window.gsap) {
   const SEL = {
     label:   ".has-label-anim, [has-label-anim]",
     heading: ".has-heading-anim, [has-heading-anim]",
-    text:    ".has-text-anim, [has-text-anim]"
+    text:    ".has-text-anim, [has-text-anim]",
+    line:    ".underline_path"
   };
+  // How long to wait after each kind starts before the next element starts
+  const GAP = { label: 0.25, text: 0.35, heading: 0.6, line: 0.3 };
   const FADE_FROM = { autoAlpha: 0, y: 24 };
-  const find = function (sel) {
-    return Array.prototype.filter.call(document.querySelectorAll(sel), function (el) { return !el.closest(".hero_canvas"); });
-  };
-  const all = find(SEL.label + "," + SEL.heading + "," + SEL.text);
+  const outsideHero = function (el) { return !el.closest(".hero_canvas"); };
+
+  const all = Array.prototype.filter.call(
+    document.querySelectorAll(SEL.label + "," + SEL.heading + "," + SEL.text), outsideHero);   // document order
   if (!all.length) return;
 
   // Hide straight away so nothing flashes before its section plays
@@ -831,43 +840,54 @@ if (window.gsap) {
     groups.get(section).push(el);
   });
 
+  // Underlines in those sections join the sequence (hidden now, drawn in order later)
+  groups.forEach(function (els, section) {
+    if (!section.matches("section, [data-anim-section]")) return;
+    const lines = Array.prototype.filter.call(section.querySelectorAll(SEL.line), outsideHero);
+    if (!lines.length) return;
+    lines.forEach(function (p) {
+      const len = p.getTotalLength();
+      gsap.set(p, { strokeDasharray: len, strokeDashoffset: len });
+    });
+    const order = els.concat(lines).sort(function (x, y) {
+      return x.compareDocumentPosition(y) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
+    });
+    groups.set(section, order);
+  });
+
+  const kind = function (el) {
+    if (el.matches(SEL.line))    return "line";
+    if (el.matches(SEL.heading)) return "heading";
+    if (el.matches(SEL.label))   return "label";
+    return "text";
+  };
+
   function build() {
     groups.forEach(function (els, section) {
-      const pick = function (sel) { return els.filter(function (el) { return el.matches(sel); }); };
-      const labels = pick(SEL.label), headings = pick(SEL.heading), texts = pick(SEL.text);
-
       const tl = gsap.timeline({
         paused: true,
         scrollTrigger: { trigger: section, start: "top 75%", once: true }
       });
       let t = 0;
 
-      // 1. Label
-      if (labels.length) {
-        tl.fromTo(labels, FADE_FROM, { autoAlpha: 1, y: 0, duration: 0.7, ease: "power3.out", stagger: 0.1 }, t);
-        t += 0.2;
-      }
+      els.forEach(function (el) {
+        const k = kind(el);
 
-      // 2. Heading: letters pop in (hero title effect); plain fade up if SplitText isn't on the page
-      if (headings.length) {
-        if (window.SplitText) {
-          headings.forEach(function (h, i) {
-            const chars = new SplitText(h, { type: "words,chars", wordsClass: "reveal-word", charsClass: "reveal-char" }).chars;
-            gsap.set(h, { autoAlpha: 1 });
-            gsap.set(chars, { autoAlpha: 0, yPercent: 60, scale: 0.5 });
-            tl.to(chars, { autoAlpha: 1, yPercent: 0, scale: 1, duration: 1.5, ease: "elastic.out(1, 0.55)",
-              stagger: { amount: Math.min(chars.length * 0.04, 0.9) } }, t + i * 0.15);   // long headings don't drag on
-          });
+        if (k === "line") {
+          tl.to(el, { strokeDashoffset: 0, duration: 1.2, ease: "power2.out" }, t);
+        } else if (k === "heading" && window.SplitText) {
+          // Letters pop in (hero title effect)
+          const chars = new SplitText(el, { type: "words,chars", wordsClass: "reveal-word", charsClass: "reveal-char" }).chars;
+          gsap.set(el, { autoAlpha: 1 });
+          gsap.set(chars, { autoAlpha: 0, yPercent: 60, scale: 0.5 });
+          tl.to(chars, { autoAlpha: 1, yPercent: 0, scale: 1, duration: 1.5, ease: "elastic.out(1, 0.55)",
+            stagger: { amount: Math.min(chars.length * 0.04, 0.9) } }, t);   // long headings don't drag on
         } else {
-          tl.fromTo(headings, FADE_FROM, { autoAlpha: 1, y: 0, duration: 0.9, ease: "power3.out", stagger: 0.15 }, t);
+          // Label, text (and headings when SplitText isn't on the page): fade up
+          tl.fromTo(el, FADE_FROM, { autoAlpha: 1, y: 0, duration: k === "heading" ? 0.9 : 0.8, ease: "power3.out" }, t);
         }
-        t += 0.5;
-      }
-
-      // 3. Paragraph(s)
-      if (texts.length) {
-        tl.fromTo(texts, FADE_FROM, { autoAlpha: 1, y: 0, duration: 0.8, ease: "power3.out", stagger: 0.12 }, t);
-      }
+        t += GAP[k];
+      });
     });
     ScrollTrigger.refresh();
   }
