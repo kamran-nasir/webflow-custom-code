@@ -1,5 +1,5 @@
 // Version marker: check the browser console for this line to be sure the NEW file is the one loading
-console.info("[hero-animations] v8 loaded", { gsap: typeof gsap, ScrollTrigger: typeof ScrollTrigger, MotionPathPlugin: typeof MotionPathPlugin, Lenis: typeof Lenis });
+console.info("[hero-animations] v9 loaded", { gsap: typeof gsap, ScrollTrigger: typeof ScrollTrigger, MotionPathPlugin: typeof MotionPathPlugin, Lenis: typeof Lenis });
 
 // Register whichever GSAP plugins are loaded on the page (skips any that aren't,
 // so a missing plugin can never stop the rest of this file from running)
@@ -835,7 +835,7 @@ if (window.gsap) {
 /* =========================================================
    HERO INTRO + PARALLAX
    Order: canvas box grows open -> nav -> moon, webs, servers
-   -> title letters -> bat flies in -> ghost -> logo, copy, button
+   -> title letters -> green monsters scurry in from the left and right -> logo, copy, button
    -> mouse parallax switches on.
    ========================================================= */
 (function () {
@@ -856,8 +856,8 @@ if (window.gsap) {
     webs:     $(".hero_canvas .hero-bottom-webs"),
     title:    $(".hero_canvas .hero-header h1"),
     monster:  $(".hero_canvas .hero_monster"),       // optional: only if the hero has a monster image
-    bat:      $(".hero_canvas .bat-anim-wrap"),
-    ghost:    $(".hero_canvas .ghost-anim-wrap"),
+    monsterL: $(".hero_canvas .green-monster-left"),
+    monsterR: $(".hero_canvas .green-monster-right"),
     logo:     $(".hero_canvas .hpe-logo"),
     sub:      $(".hero_canvas .hero-subheader-wrap"),
     bottom:   $(".hero_canvas .hero-header-bottom"),
@@ -865,14 +865,9 @@ if (window.gsap) {
   };
   const has = function (x) { return x && (!Array.isArray(x) || x.length); };
 
-  function startBat() {
-    if (window.playBat) window.playBat(); else window.batPending = true;
-  }
-
   // Reduced motion: show the finished hero, no intro, no parallax
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
     root.classList.remove("hero-intro");
-    startBat();
     return;
   }
 
@@ -898,7 +893,13 @@ if (window.gsap) {
     if (has(el.title))    gsap.set(el.title,    { autoAlpha: 1 });
     if (chars.length)     gsap.set(chars,       { autoAlpha: 0, yPercent: 60, scale: 0.5 });
     if (has(el.monster))  gsap.set(el.monster,  { autoAlpha: 0, scale: 0, rotate: -20, transformOrigin: "50% 100%" });
-    if (has(el.ghost))    gsap.set(el.ghost,    { autoAlpha: 0, yPercent: 12 });
+    // Green monsters wait just outside the canvas on their own side
+    const offside = function (m, dir) {
+      const r = m.getBoundingClientRect(), c = canvas.getBoundingClientRect();
+      return dir < 0 ? c.left - r.right - 40 : c.right - r.left + 40;
+    };
+    if (has(el.monsterL)) gsap.set(el.monsterL, { autoAlpha: 0, x: offside(el.monsterL, -1), transformOrigin: "50% 100%" });
+    if (has(el.monsterR)) gsap.set(el.monsterR, { autoAlpha: 0, x: offside(el.monsterR,  1), transformOrigin: "50% 100%" });
     if (has(el.logo))     gsap.set(el.logo,     { autoAlpha: 0, x: -30 });
     const subLines = has(el.sub) ? (el.sub.children.length ? Array.prototype.slice.call(el.sub.children) : [el.sub]) : [];
     if (has(el.sub))      gsap.set(el.sub,      { autoAlpha: 1 });
@@ -908,14 +909,16 @@ if (window.gsap) {
     root.classList.remove("hero-intro");   // GSAP owns visibility from here
 
     // ---------- the sequence ----------
-    const tl = gsap.timeline({ defaults: { ease: "power3.out" }, onComplete: enableParallax });
+    const tl = gsap.timeline({ defaults: { ease: "power3.out" }, onComplete: function () {
+      canvas.style.clipPath = "";      // monsters are in, nothing left to hide outside the canvas
+      enableParallax();
+    } });
 
     // 1. Canvas grows from nothing at the centre out to full size in all four directions.
     //    (tweening plain numbers and writing the clip-path ourselves keeps all 4 sides in sync)
     const box = { v: 50, h: 50 };
     const drawBox = function () { canvas.style.clipPath = clip(box.v, box.h); };
-    tl.to(box, { v: 0, h: 0, duration: 1.4, ease: "power4.inOut", onUpdate: drawBox }, 0.1)
-      .call(function () { canvas.style.clipPath = ""; });
+    tl.to(box, { v: 0, h: 0, duration: 1.4, ease: "power4.inOut", onUpdate: drawBox }, 0.1);
 
     // 2. Nav drops in as the canvas finishes opening
     const t = 1.1;
@@ -940,13 +943,43 @@ if (window.gsap) {
 
     // 5. Characters
     if (has(el.monster)) tl.to(el.monster, { autoAlpha: 1, scale: 1, rotate: 0, duration: 0.7, ease: "back.out(2.2)" }, 2.15);
-    tl.call(startBat, null, 2.25);                     // bat does its own fly-in + landing
-    if (has(el.ghost))   tl.to(el.ghost, { autoAlpha: 1, yPercent: 0, duration: 1.2, ease: "power2.out" }, 2.55);
+    if (has(el.monsterL)) monsterIn(tl, el.monsterL, -1, 2.1);    // left one first...
+    if (has(el.monsterR)) monsterIn(tl, el.monsterR,  1, 2.35);   // ...right one a beat later
 
     // 6. Bottom row: logo, copy lines, button
     if (has(el.logo))    tl.to(el.logo,   { autoAlpha: 1, x: 0, duration: 0.8 }, 2.65);
     if (subLines.length) tl.to(subLines,  { autoAlpha: 1, y: 0, duration: 0.7, stagger: 0.12 }, 2.75);
     if (has(el.btn))     tl.to(el.btn,    { autoAlpha: 1, scale: 1, duration: 0.8, ease: "back.out(2)" }, 2.95);
+  }
+
+  // ---------- green monsters ----------
+  // dir: -1 = comes in from the left, 1 = from the right
+  function monsterIn(tl, m, dir, at) {
+    tl.set(m, { autoAlpha: 1 }, at)
+      // scurry in with two hops, leaning forward, then straighten up
+      .to(m, { x: 0, duration: 0.9, ease: "power3.out" }, at)
+      .to(m, { keyframes: { y: [0, -34, 0, -14, 0], easeEach: "sine.inOut" }, duration: 0.85, ease: "none" }, at)
+      .fromTo(m, { rotate: -dir * 14 }, { rotate: 0, duration: 1, ease: "back.out(2)" }, at)
+      // land: squash, then spring back
+      .to(m, { scaleY: 0.86, scaleX: 1.1, duration: 0.12, ease: "power2.out" }, at + 0.82)
+      .to(m, { scaleY: 1, scaleX: 1, duration: 0.7, ease: "elastic.out(1, 0.4)" }, at + 0.94)
+      .call(monsterIdle, [m, dir], at + 1.65);
+  }
+
+  // Lurking: slow breathing, a little sway, and now and then a snarl-lean toward the title
+  function monsterIdle(m, dir) {
+    const R = gsap.utils.random;
+    gsap.to(m, { scaleY: 1.035, scaleX: 0.985, duration: 1.8, ease: "sine.inOut", yoyo: true, repeat: -1 });
+    gsap.fromTo(m, { rotate: -2 }, { rotate: 2, duration: R(2.4, 3), ease: "sine.inOut", yoyo: true, repeat: -1 });
+    (function snarl() {
+      gsap.delayedCall(R(4, 7), function () {
+        gsap.timeline()
+          .to(m, { skewX: dir * 8, duration: 0.18, ease: "power2.out" })
+          .to(m, { skewX: dir * 6, duration: 0.08, ease: "none", yoyo: true, repeat: 3 })
+          .to(m, { skewX: 0, duration: 0.6, ease: "elastic.out(1, 0.5)" });
+        snarl();
+      });
+    })();
   }
 
   // ---------- mouse parallax ----------
@@ -958,8 +991,8 @@ if (window.gsap) {
     [el.servers,  22],
     [el.title,     8],
     [el.monster,  24],
-    [el.bat,      30],
-    [el.ghost,    26],
+    [el.monsterL, 28],
+    [el.monsterR, 32],
     [el.bottom,    5]
   ];
   let parallaxOn = false, movers = [];
@@ -1023,8 +1056,8 @@ if (window.gsap) {
     [q(".hero_servers"),         3],
     [q(".hero-bottom-webs"),    -2],
     [q(".hero-header h1"),      -5],
-    [q(".ghost-anim-wrap"),     -8],
-    [q(".bat-anim-wrap"),      -10],
+    [q(".green-monster-left"),  -8],
+    [q(".green-monster-right"), -10],
     [q(".hero_monster"),        -9],
     [q(".hero-header-bottom"),  -3]
   ].filter(function (l) { return l[0]; });
