@@ -1,5 +1,5 @@
 // Version marker: check the browser console for this line to be sure the NEW file is the one loading
-console.info("[hero-animations] v12 loaded", { gsap: typeof gsap, ScrollTrigger: typeof ScrollTrigger, MotionPathPlugin: typeof MotionPathPlugin, Lenis: typeof Lenis });
+console.info("[hero-animations] v13 loaded", { gsap: typeof gsap, ScrollTrigger: typeof ScrollTrigger, MotionPathPlugin: typeof MotionPathPlugin, Lenis: typeof Lenis });
 
 // Register whichever GSAP plugins are loaded on the page (skips any that aren't,
 // so a missing plugin can never stop the rest of this file from running)
@@ -981,7 +981,9 @@ if (window.gsap) {
 
   function monsterFloat(m, dur, delay) {
     gsap.to(m, { yPercent: -4, duration: dur, ease: "sine.inOut", yoyo: true, repeat: -1, delay: delay });
-    gsap.fromTo(m, { rotate: -1.5 }, { rotate: 1.5, duration: dur * 1.3, ease: "sine.inOut", yoyo: true, repeat: -1, delay: delay });
+    gsap.timeline({ delay: delay })                // ease into the sway (no snap from the landing pose)
+      .to(m, { rotate: -1.5, duration: dur * 0.65, ease: "sine.out" })
+      .to(m, { rotate: 1.5, duration: dur * 1.3, ease: "sine.inOut", yoyo: true, repeat: -1 });
   }
 
   // ---------- mouse parallax ----------
