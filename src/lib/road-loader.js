@@ -23,6 +23,8 @@ export function roadLoader(opts) {
   const n = colors.length;
   const NS = "http://www.w3.org/2000/svg";
   const W = 1600, H = 900, MID = W / 2, VY = 470, STEPS = 70;
+  // the seven stripes start as wide as the logo lock-up (about 300), with a gap between them
+  const PITCH = 44, TOP_W = 30, LOGO_W = 135, LOGO_GAP = 20;
   // per stripe distance from the middle: where it ends, how wide it gets, how tightly it bends
   const SHAPE = [
     { ex: 0,    ey: H + 80, w: 330, b1: 1,    b2x: 0,   b2y: 1 },
@@ -34,10 +36,10 @@ export function roadLoader(opts) {
   // Centre line of one stripe (k = -3..3): short straight run down from the vanishing point, then a curve.
   function stripe(k) {
     const sh = SHAPE[Math.min(Math.abs(k), SHAPE.length - 1)], dir = k < 0 ? -1 : 1;
-    const x0 = MID + k * 12, y1 = VY + 110, ex = MID + dir * sh.ex, ey = sh.ey;
+    const x0 = MID + k * PITCH, y1 = VY + 110, ex = MID + dir * sh.ex, ey = sh.ey;
     const dx = ex - x0, dy = ey - y1;
     const c1x = x0, c1y = y1 + dy * sh.b1, c2x = x0 + dx * sh.b2x, c2y = y1 + dy * sh.b2y;
-    const w0 = 12, pts = [];
+    const w0 = TOP_W, pts = [];
     for (let i = 0; i <= STEPS; i++) {
       const t = i / STEPS;
       let px, py, tx, ty;
@@ -50,7 +52,7 @@ export function roadLoader(opts) {
         ty = 3 * v * v * (c1y - y1) + 6 * v * b * (c2y - c1y) + 3 * b * b * (ey - c2y);
       }
       const len = Math.sqrt(tx * tx + ty * ty) || 1;
-      const w = (w0 + (sh.w - w0) * Math.pow(t, 1.5)) / 2;
+      const w = (w0 + (sh.w - w0) * Math.pow(t, 2.4)) / 2;
       pts.push([px, py, -ty / len * w, tx / len * w]);
     }
     return pts;
@@ -61,14 +63,19 @@ export function roadLoader(opts) {
     for (let i = 0; i <= m; i++) { const q = pts[i]; l.push((q[0] + q[2]).toFixed(1) + " " + (q[1] + q[3]).toFixed(1)); r.push((q[0] - q[2]).toFixed(1) + " " + (q[1] - q[3]).toFixed(1)); }
     return "M" + l.join(" L") + " L" + r.reverse().join(" L") + "Z";
   }
-  function logo(sel, x, y, w, h) {
+  // A logo <img> reused inside the SVG, sized by its real aspect ratio, bottom edge on the vanishing point.
+  function logo(sel, side) {
     const src = sel && document.querySelector(sel);
     const url = src && (src.currentSrc || src.src);
     if (!url) return null;
+    const ratio = src.naturalWidth && src.naturalHeight ? src.naturalHeight / src.naturalWidth : 0.35;
+    const h = LOGO_W * ratio;
     const im = document.createElementNS(NS, "image");
     im.setAttribute("href", url);
-    im.setAttribute("x", x); im.setAttribute("y", y); im.setAttribute("width", w); im.setAttribute("height", h);
-    im.setAttribute("preserveAspectRatio", "xMidYMid meet");
+    im.setAttribute("x", side < 0 ? MID - LOGO_GAP - LOGO_W : MID + LOGO_GAP);
+    im.setAttribute("y", VY - h); im.setAttribute("width", LOGO_W); im.setAttribute("height", h);
+    im.setAttribute("preserveAspectRatio", "xMidYMax meet");
+    im._h = h;
     return im;
   }
 
@@ -89,10 +96,11 @@ export function roadLoader(opts) {
       });
       // logo lock-up just above the vanishing point: left logo | divider | right logo
       const lg = opts.logos || {}, logoEls = [];
-      const l1 = logo(lg.left, MID - 170, VY - 120, 130, 60), l2 = logo(lg.right, MID + 40, VY - 125, 130, 70);
+      const l1 = logo(lg.left, -1), l2 = logo(lg.right, 1);
       if (l1 || l2) {
+        const dh = Math.max(l1 ? l1._h : 0, l2 ? l2._h : 0);
         const d = document.createElementNS(NS, "rect");
-        d.setAttribute("x", MID - 1.5); d.setAttribute("y", VY - 125); d.setAttribute("width", 3); d.setAttribute("height", 70);
+        d.setAttribute("x", MID - 1.5); d.setAttribute("y", VY - dh); d.setAttribute("width", 3); d.setAttribute("height", dh);
         d.style.fill = colors[Math.floor(n / 2)];
         [l1, d, l2].forEach(function (e) { if (e) { svg.appendChild(e); logoEls.push(e); } });
       }
