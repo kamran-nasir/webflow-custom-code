@@ -1,13 +1,15 @@
 {
   "name": "webflow-custom-code",
-  "version": "1.0.21",
+  "version": "1.0.22",
   "description": "",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "esbuild src/main.js --bundle --minify --outfile=dist/main.min.js",
     "watch": "chokidar 'src/**/*.js' -c './scripts/auto-release.sh' --debounce 5000",
-    "deploy": "npm run build && git add -A && (git diff --cached --quiet || git commit -m 'Deploy Webflow JS') && git push"
+    "deploy": "npm run build:all && git add -A && (git diff --cached --quiet || git commit -m 'Deploy Webflow JS') && git push",
+    "build:campaigns": "node scripts/build-campaigns.mjs",
+    "build:all": "npm run build && npm run build:campaigns"
   },
   "keywords": [],
   "author": "",

@@ -5,7 +5,7 @@ echo ""
 echo "🚀 Change detected..."
 
 # Build/minify
-npm run build
+npm run build:all
 
 # Increment patch version
 npm version patch --no-git-tag-version
