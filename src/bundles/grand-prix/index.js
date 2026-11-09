@@ -9,7 +9,7 @@ init({
   smoothScroll: true,
   // Opening animation: five columns in the road-stripe colours lift away left to right; everything else starts after.
   // Keep the gradient in head.html (html.curtain-on) in the same colour order.
-  roadLoader:{ background:"var(--neutral--gray-100, #F2F2F2)", colors:["var(--brand--teal-700, #29615A)","var(--neutral--gray-400, #969696)","var(--brand--green-500, #01A982)","var(--neutral--gray-350, #C8C8C8)","var(--brand--mint-400, #6ED2B4)"] },
+  roadLoader:{ background:"var(--neutral--gray-100, #F2F2F2)", logos:{ left:".cpp-hpe", right:".cpp-logo-link img" }, colors:["var(--brand--teal-700, #29615A)","var(--neutral--gray-400, #969696)","var(--brand--mint-400, #6ED2B4)","var(--brand--green-500, #01A982)","var(--neutral--gray-350, #C8C8C8)","var(--neutral--charcoal-800, #1E1E1E)","var(--brand--mint-400, #6ED2B4)"] },
 
   // Page-load sequence: nav drops in, video thumbnail rises, headline letters pop, copy + CTA follow.
   heroIntro: {
