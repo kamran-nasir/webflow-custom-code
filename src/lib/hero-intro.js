@@ -10,7 +10,7 @@ import { SLIDE, splitLines } from "./split-lines.js";
      media    image / video thumbnail slides up                       e.g. ".hero_servers"
      title    heading, line by line (line slide, see split-lines.js)   e.g. ".hero-header h1"
      logo     small partner logo slides in                            e.g. ".hpe-logo"
-     sub      sub-heading / copy, line by line (line slide)           e.g. ".hero-subheader-wrap"
+     sub      sub-heading / copy (its children fade up one by one)    e.g. ".hero-subheader-wrap"
      button   hero CTA pops in                                        e.g. ".hero-btn"
    radius: corner radius of the canvas clip (match your CSS), default "24px".
 
@@ -44,11 +44,8 @@ export function heroIntro(cfg) {
     const splits = [];
     let titleLines = [];
     if (has(el.title)) { const sp = splitLines(el.title); splits.push(sp); titleLines = sp.lines; }
-    let subLines = [];
-    if (has(el.sub)) {
-      const blocks = el.sub.children.length ? Array.prototype.slice.call(el.sub.children) : [el.sub];
-      blocks.forEach(function (b) { const sp = splitLines(b); splits.push(sp); subLines = subLines.concat(sp.lines); });
-    }
+    // copy (sub): the earlier fade-up, one block at a time. Only the heading uses the line slide.
+    const subLines = has(el.sub) ? (el.sub.children.length ? Array.prototype.slice.call(el.sub.children) : [el.sub]) : [];
 
     // start states (everything hidden)
     if (has(el.canvas))   el.canvas.style.clipPath = clip(50, 50);
@@ -60,7 +57,7 @@ export function heroIntro(cfg) {
     if (titleLines.length) gsap.set(titleLines, Object.assign({}, SLIDE.from));
     if (has(el.logo))     gsap.set(el.logo,     { autoAlpha: 0, x: -30 });
     if (has(el.sub))      gsap.set(el.sub,      { autoAlpha: 1 });
-    if (subLines.length)  gsap.set(subLines,    Object.assign({}, SLIDE.from));
+    if (subLines.length)  gsap.set(subLines,    { autoAlpha: 0, y: 20 });
     if (has(el.button))   gsap.set(el.button,   { autoAlpha: 0, scale: 0.8 });
     done();                                          // GSAP owns visibility from here
 
@@ -81,7 +78,7 @@ export function heroIntro(cfg) {
     if (has(el.media))    tl.to(el.media,    { autoAlpha: 1, yPercent: 0, duration: 1.1 }, t + 0.1);
     if (titleLines.length) tl.to(titleLines, Object.assign({}, SLIDE.to, { stagger: SLIDE.step }), t + 0.3);
     if (has(el.logo))     tl.to(el.logo,     { autoAlpha: 1, x: 0, duration: 0.8 }, t + 0.9);
-    if (subLines.length)  tl.to(subLines,    Object.assign({}, SLIDE.to, { stagger: SLIDE.step }), t + 0.9);
+    if (subLines.length)  tl.to(subLines,    { autoAlpha: 1, y: 0, duration: 0.7, stagger: 0.12 }, t + 0.9);
     if (has(el.button))   tl.to(el.button,   { autoAlpha: 1, scale: 1, duration: 0.8, ease: "back.out(2)" }, t + 1.3);
     afterGate(function () { tl.play(); });             // waits for the opening curtain, if there is one
   }

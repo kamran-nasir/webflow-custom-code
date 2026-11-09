@@ -3,17 +3,17 @@ import { SLIDE, splitLines } from "./split-lines.js";
 
 /* SECTION REVEALS + UNDERLINE DRAW
    Mark elements in Webflow with a class or attribute (no code needed):
-     has-label-anim    -> the label slides in
-     has-heading-anim  -> heading, line by line
-     has-text-anim     -> paragraph, line by line
+     has-label-anim    -> fades up
+     has-heading-anim  -> heading, line by line (line slide)
+     has-text-anim     -> fades up (the earlier copy animation)
      .underline_path   -> an SVG <path> that draws itself
    ...or list extra CSS selectors in the campaign entry (opts.label / heading / text)
    so nothing has to be added in the Designer.
-   The text effect is the "line slide" from split-lines.js (matches gpcanada.ca): each line slides
-   in from the left, skewed, with an expo-out ease. Each text group (a heading and the text that
-   follows it) is ONE timeline: its lines start 0.1s apart in page order, the next block starting
-   on the previous block's last line. It plays once when the group's first element reaches
-   "top 95%". Underlines inside a group join the sequence. Anything inside opts.exclude is skipped. */
+   HEADINGS use the "line slide" from split-lines.js (matches gpcanada.ca): each line slides in from
+   the left, skewed, with an expo-out ease, lines 0.1s apart. Labels and copy keep the earlier fade-up.
+   Each group (a heading and the text that follows it) is ONE timeline, in page order, played once when
+   the group's first element reaches "top 95%". Underlines inside a group join the sequence.
+   Anything inside opts.exclude is skipped. */
 
 const DEFAULTS = {
   label:   ".has-label-anim, [has-label-anim]",
@@ -22,8 +22,10 @@ const DEFAULTS = {
   line:    ".underline_path",
   exclude: "[data-anim-skip]",
   start:   "top 95%",
-  step:    SLIDE.step
+  step:    SLIDE.step,
+  gap:     { label: 0.25, text: 0.35, heading: 0.25, line: 0.3 }   // pause after each element (fade-up blocks)
 };
+const FADE_FROM = { autoAlpha: 0, y: 24 };
 
 function join(base, extra) { return extra ? base + "," + extra : base; }
 
@@ -96,25 +98,26 @@ export function reveals(opts) {
     groups.forEach(function (els, section) {
       const tl = gsap.timeline({ paused: true, scrollTrigger: { trigger: els[0], start: START, once: true } });
       const splits = [];
-      let t = 0, first = true;
+      let t = 0;
       els.forEach(function (el) {
         const k = kind(el);
         if (k === "line") {
           tl.set(el, { autoAlpha: 1 }, t).to(el, { strokeDashoffset: 0, duration: 1.2, ease: "power2.out" }, t);
-          return;
-        }
-        let targets = [el];
-        if (k !== "label") {
+          t += DEFAULTS.gap.line;
+        } else if (k === "heading") {
           const sp = splitLines(el);
-          splits.push(sp); targets = sp.lines;
-          gsap.set(el, { autoAlpha: 1 });                 // the block shows; its lines start hidden
+          splits.push(sp);
+          gsap.set(el, { autoAlpha: 1 });                  // the block shows; its lines start hidden
+          gsap.set(sp.lines, Object.assign({}, SLIDE.from));
+          sp.lines.forEach(function (ln, i) {
+            if (i > 0) t += STEP;
+            tl.to(ln, Object.assign({}, SLIDE.to), t);
+          });
+          t += DEFAULTS.gap.heading;
+        } else {                                           // label / copy: the earlier fade-up
+          tl.fromTo(el, FADE_FROM, { autoAlpha: 1, y: 0, duration: 0.8, ease: "power3.out" }, t);
+          t += DEFAULTS.gap[k];
         }
-        gsap.set(targets, Object.assign({}, SLIDE.from));
-        targets.forEach(function (ln, i) {
-          if (!(i === 0 && !first)) t += STEP;            // next block starts on the previous last line
-          tl.to(ln, Object.assign({}, SLIDE.to), t);
-        });
-        first = false;
       });
       tl.eventCallback("onComplete", function () { splits.forEach(function (sp) { sp.revert(); }); });
     });
