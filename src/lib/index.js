@@ -1,5 +1,6 @@
 import { marker, registerPlugins, releaseHide, setGate } from "./core.js";
 import { curtain } from "./curtain.js";
+import { roadLoader } from "./road-loader.js";
 import { smoothScroll } from "./smooth-scroll.js";
 import { reveals } from "./reveals.js";
 import { scrollParallax, mouseParallax } from "./parallax.js";
@@ -7,7 +8,7 @@ import { heroIntro } from "./hero-intro.js";
 import { finishLine } from "./finish-line.js";
 import { sprintLines } from "./sprint-lines.js";
 
-export { curtain, smoothScroll, reveals, scrollParallax, mouseParallax, heroIntro, finishLine, sprintLines };
+export { curtain, roadLoader, smoothScroll, reveals, scrollParallax, mouseParallax, heroIntro, finishLine, sprintLines };
 export * from "./core.js";
 
 /* One call per campaign. Turn on only what the page uses:
@@ -15,6 +16,7 @@ export * from "./core.js";
    init({
      name: "CAM-05099",
      smoothScroll: true,                         // or { lerp: 0.08 }
+     roadLoader: { colors: [...], background: "var(--neutral--gray-100)" },  // opening animation: stripes bend toward the viewer, then the cover lifts
      curtain: { colors: [...] },                 // opening animation: columns lift away, THEN the rest starts
      reveals: { label: ".x", heading: ".y", text: ".z", exclude: ".hero" },
      heroIntro: { canvas, brand, links, navRight, media, title, logo, sub, button },
@@ -30,7 +32,8 @@ export function init(cfg) {
   marker(cfg.name || "campaign");
   registerPlugins();
   if (cfg.smoothScroll) smoothScroll(cfg.smoothScroll === true ? {} : cfg.smoothScroll);
-  if (cfg.curtain) setGate(curtain(cfg.curtain === true ? {} : cfg.curtain));   // everything below waits for it
+  if (cfg.roadLoader) setGate(roadLoader(cfg.roadLoader === true ? {} : cfg.roadLoader));
+  else if (cfg.curtain) setGate(curtain(cfg.curtain === true ? {} : cfg.curtain));   // everything below waits for it
   if (cfg.heroIntro) heroIntro(cfg.heroIntro === true ? {} : cfg.heroIntro);
   if (cfg.reveals) reveals(cfg.reveals === true ? {} : cfg.reveals);
   if (cfg.sprintLines) sprintLines(cfg.sprintLines);   // before parallax: it swaps the <img> for an SVG
