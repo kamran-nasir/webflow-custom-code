@@ -19,7 +19,7 @@ export * from "./core.js";
      scrollParallax: true,                       // data-parallax="-5" or { items: [[".sel", -4]] }
      mouseParallax: true,                        // [data-mouse-parallax] > [data-depth] or { container, layers }
      flagTransition: true,                       // div[data-flag-transition]
-     sprintLines: { items: ".stripes" },         // racing stripes sprint in on scroll
+     sprintLines: { items: ".stripes", svg: {...} }, // each racing stripe sprints in on scroll
      custom: function (lib) { ... }              // campaign-only code
    });
 */
@@ -30,10 +30,10 @@ export function init(cfg) {
   if (cfg.smoothScroll) smoothScroll(cfg.smoothScroll === true ? {} : cfg.smoothScroll);
   if (cfg.heroIntro) heroIntro(cfg.heroIntro === true ? {} : cfg.heroIntro);
   if (cfg.reveals) reveals(cfg.reveals === true ? {} : cfg.reveals);
+  if (cfg.sprintLines) sprintLines(cfg.sprintLines);   // before parallax: it swaps the <img> for an SVG
   if (cfg.scrollParallax) scrollParallax(cfg.scrollParallax === true ? {} : cfg.scrollParallax);
   if (cfg.mouseParallax) mouseParallax(cfg.mouseParallax === true ? {} : cfg.mouseParallax);
   if (cfg.flagTransition) flagTransition();
-  if (cfg.sprintLines) sprintLines(cfg.sprintLines);
   if (typeof cfg.custom === "function") cfg.custom({ gsap: window.gsap, ScrollTrigger: window.ScrollTrigger });
   releaseHide();
 }

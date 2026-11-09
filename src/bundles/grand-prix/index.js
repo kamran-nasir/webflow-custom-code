@@ -41,5 +41,14 @@ init({
 
   // Checkered-flag scroll transition between "What's slowing" and "Why choose" (empty div[data-flag-transition] in the master).
   flagTransition: true,
-  sprintLines: { items: ".cpp-roads" }
+  sprintLines: {
+    items: ".cpp-roads",
+    svg: { width: 3200, height: 668, stripes: [
+      { color: "#29615a", points: [[2743.9, 0], [2829.5, 0], [313.7, 668], [106.2, 668]] },
+      { color: "#969696", points: [[2856.4, 0], [2930.1, 0], [555.3, 668], [370.8, 668]] },
+      { color: "#01a982", points: [[2955, 0], [3020.7, 0], [773.9, 668], [607.5, 668]] },
+      { color: "#c8c8c8", points: [[3043.7, 0], [3103.4, 0], [971.4, 668], [821, 668]] },
+      { color: "#6ed2b4", points: [[3124.3, 0], [3181.1, 0], [1152.9, 668], [1014.5, 668]] }
+    ] }
+  }
 });
