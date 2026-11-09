@@ -1,4 +1,5 @@
 import { hasGsap, prefersReducedMotion, toArray, first, whenReady } from "./core.js";
+import { SLIDE, splitLines } from "./split-lines.js";
 
 /* HERO INTRO
    A configurable page-load sequence. Every key is a CSS selector and every one is optional:
@@ -7,9 +8,9 @@ import { hasGsap, prefersReducedMotion, toArray, first, whenReady } from "./core
      links    nav links stagger in                                    e.g. ".nav-wrap .nav-link"
      navRight nav button pops in                                      e.g. ".nav-wrap .nav-right"
      media    image / video thumbnail slides up                       e.g. ".hero_servers"
-     title    heading, split into letters that pop (SplitText)        e.g. ".hero-header h1"
+     title    heading, line by line (line slide, see split-lines.js)   e.g. ".hero-header h1"
      logo     small partner logo slides in                            e.g. ".hpe-logo"
-     sub      sub-heading / copy (its children fade up one by one)    e.g. ".hero-subheader-wrap"
+     sub      sub-heading / copy, line by line (line slide)           e.g. ".hero-subheader-wrap"
      button   hero CTA pops in                                        e.g. ".hero-btn"
    radius: corner radius of the canvas clip (match your CSS), default "24px".
 
@@ -40,11 +41,14 @@ export function heroIntro(cfg) {
   if (!Object.keys(el).some(function (k) { return has(el[k]); })) { done(); return; }
 
   function build() {
-    let chars = [];
-    if (has(el.title) && window.SplitText) {
-      chars = new window.SplitText(el.title, { type: "words,chars", wordsClass: "hero-word", charsClass: "hero-char" }).chars;
+    const splits = [];
+    let titleLines = [];
+    if (has(el.title)) { const sp = splitLines(el.title); splits.push(sp); titleLines = sp.lines; }
+    let subLines = [];
+    if (has(el.sub)) {
+      const blocks = el.sub.children.length ? Array.prototype.slice.call(el.sub.children) : [el.sub];
+      blocks.forEach(function (b) { const sp = splitLines(b); splits.push(sp); subLines = subLines.concat(sp.lines); });
     }
-    const subLines = has(el.sub) ? (el.sub.children.length ? Array.prototype.slice.call(el.sub.children) : [el.sub]) : [];
 
     // start states (everything hidden)
     if (has(el.canvas))   el.canvas.style.clipPath = clip(50, 50);
@@ -53,15 +57,16 @@ export function heroIntro(cfg) {
     if (has(el.navRight)) gsap.set(el.navRight, { autoAlpha: 0, scale: 0.85 });
     if (has(el.media))    gsap.set(el.media,    { autoAlpha: 0, yPercent: 12 });
     if (has(el.title))    gsap.set(el.title,    { autoAlpha: 1 });
-    if (chars.length)     gsap.set(chars,       { autoAlpha: 0, yPercent: 60, scale: 0.5 });
+    if (titleLines.length) gsap.set(titleLines, Object.assign({}, SLIDE.from));
     if (has(el.logo))     gsap.set(el.logo,     { autoAlpha: 0, x: -30 });
     if (has(el.sub))      gsap.set(el.sub,      { autoAlpha: 1 });
-    if (subLines.length)  gsap.set(subLines,    { autoAlpha: 0, y: 20 });
+    if (subLines.length)  gsap.set(subLines,    Object.assign({}, SLIDE.from));
     if (has(el.button))   gsap.set(el.button,   { autoAlpha: 0, scale: 0.8 });
     done();                                          // GSAP owns visibility from here
 
     const tl = gsap.timeline({ defaults: { ease: "power3.out" }, onComplete: function () {
       if (has(el.canvas)) el.canvas.style.clipPath = "";
+      splits.forEach(function (sp) { sp.revert(); });
     } });
     const t = has(el.canvas) ? 1.1 : 0;
 
@@ -74,10 +79,10 @@ export function heroIntro(cfg) {
     if (has(el.links))    tl.to(el.links,    { autoAlpha: 1, y: 0, duration: 0.6, stagger: 0.07 }, t + 0.1);
     if (has(el.navRight)) tl.to(el.navRight, { autoAlpha: 1, scale: 1, duration: 0.7, ease: "back.out(2)" }, t + 0.35);
     if (has(el.media))    tl.to(el.media,    { autoAlpha: 1, yPercent: 0, duration: 1.1 }, t + 0.1);
-    if (chars.length)     tl.to(chars,       { autoAlpha: 1, yPercent: 0, scale: 1, duration: 1.5, ease: "elastic.out(1, 0.55)", stagger: 0.04 }, t + 0.3);
-    if (has(el.logo))     tl.to(el.logo,     { autoAlpha: 1, x: 0, duration: 0.8 }, t + 1.5);
-    if (subLines.length)  tl.to(subLines,    { autoAlpha: 1, y: 0, duration: 0.7, stagger: 0.12 }, t + 1.6);
-    if (has(el.button))   tl.to(el.button,   { autoAlpha: 1, scale: 1, duration: 0.8, ease: "back.out(2)" }, t + 1.8);
+    if (titleLines.length) tl.to(titleLines, Object.assign({}, SLIDE.to, { stagger: SLIDE.step }), t + 0.3);
+    if (has(el.logo))     tl.to(el.logo,     { autoAlpha: 1, x: 0, duration: 0.8 }, t + 0.9);
+    if (subLines.length)  tl.to(subLines,    Object.assign({}, SLIDE.to, { stagger: SLIDE.step }), t + 0.9);
+    if (has(el.button))   tl.to(el.button,   { autoAlpha: 1, scale: 1, duration: 0.8, ease: "back.out(2)" }, t + 1.3);
   }
 
   whenReady(build);

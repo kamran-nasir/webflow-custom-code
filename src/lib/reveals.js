@@ -1,17 +1,19 @@
 import { hasGsap, prefersReducedMotion, toArray, whenReady } from "./core.js";
+import { SLIDE, splitLines } from "./split-lines.js";
 
 /* SECTION REVEALS + UNDERLINE DRAW
    Mark elements in Webflow with a class or attribute (no code needed):
-     has-label-anim    -> fades up
-     has-heading-anim  -> letters pop in (SplitText), falls back to fade up
-     has-text-anim     -> fades up
+     has-label-anim    -> the label slides in
+     has-heading-anim  -> heading, line by line
+     has-text-anim     -> paragraph, line by line
      .underline_path   -> an SVG <path> that draws itself
    ...or list extra CSS selectors in the campaign entry (opts.label / heading / text)
    so nothing has to be added in the Designer.
-   Each section plays once when it scrolls into view. Elements animate one by one in page
-   order, each starting a little before the previous one finishes. Underlines inside such a
-   section join the sequence (drawn right after the heading above them). Lines elsewhere draw
-   on their own when scrolled to. Anything inside opts.exclude is skipped (e.g. the hero). */
+   The text effect is the "line slide" from split-lines.js (matches gpcanada.ca): each line slides
+   in from the left, skewed, with an expo-out ease. Each text group (a heading and the text that
+   follows it) is ONE timeline: its lines start 0.1s apart in page order, the next block starting
+   on the previous block's last line. It plays once when the group's first element reaches
+   "top 95%". Underlines inside a group join the sequence. Anything inside opts.exclude is skipped. */
 
 const DEFAULTS = {
   label:   ".has-label-anim, [has-label-anim]",
@@ -19,8 +21,8 @@ const DEFAULTS = {
   text:    ".has-text-anim, [has-text-anim]",
   line:    ".underline_path",
   exclude: "[data-anim-skip]",
-  start:   "top 75%",
-  gap:     { label: 0.25, text: 0.35, heading: 0.6, line: 0.3 }
+  start:   "top 95%",
+  step:    SLIDE.step
 };
 
 function join(base, extra) { return extra ? base + "," + extra : base; }
@@ -38,9 +40,8 @@ export function reveals(opts) {
     line:    join(DEFAULTS.line,    opts.line)
   };
   const exclude = join(DEFAULTS.exclude, opts.exclude);
-  const GAP = Object.assign({}, DEFAULTS.gap, opts.gap || {});
+  const STEP = opts.step != null ? opts.step : DEFAULTS.step;
   const START = opts.start || DEFAULTS.start;
-  const FADE_FROM = { autoAlpha: 0, y: 24 };
   const included = function (el) { return !el.closest(exclude); };
   const sectionOf = function (el) { return el.closest("section, [data-anim-section]"); };
 
@@ -93,25 +94,29 @@ export function reveals(opts) {
 
   function build() {
     groups.forEach(function (els, section) {
-      const tl = gsap.timeline({ paused: true, scrollTrigger: { trigger: section, start: START, once: true } });
-      let t = 0;
+      const tl = gsap.timeline({ paused: true, scrollTrigger: { trigger: els[0], start: START, once: true } });
+      const splits = [];
+      let t = 0, first = true;
       els.forEach(function (el) {
         const k = kind(el);
         if (k === "line") {
           tl.set(el, { autoAlpha: 1 }, t).to(el, { strokeDashoffset: 0, duration: 1.2, ease: "power2.out" }, t);
-        } else if (k === "heading" && window.SplitText) {
-          const chars = new window.SplitText(el, { type: "words,chars", wordsClass: "reveal-word", charsClass: "reveal-char" }).chars;
-          gsap.set(el, { autoAlpha: 1 });
-          gsap.set(chars, { autoAlpha: 0, yPercent: 60, scale: 0.5 });
-          tl.to(chars, {
-            autoAlpha: 1, yPercent: 0, scale: 1, duration: 1.5, ease: "elastic.out(1, 0.55)",
-            stagger: { amount: Math.min(chars.length * 0.04, 0.9) }          // long headings don't drag on
-          }, t);
-        } else {
-          tl.fromTo(el, FADE_FROM, { autoAlpha: 1, y: 0, duration: k === "heading" ? 0.9 : 0.8, ease: "power3.out" }, t);
+          return;
         }
-        t += GAP[k];
+        let targets = [el];
+        if (k !== "label") {
+          const sp = splitLines(el);
+          splits.push(sp); targets = sp.lines;
+          gsap.set(el, { autoAlpha: 1 });                 // the block shows; its lines start hidden
+        }
+        gsap.set(targets, Object.assign({}, SLIDE.from));
+        targets.forEach(function (ln, i) {
+          if (!(i === 0 && !first)) t += STEP;            // next block starts on the previous last line
+          tl.to(ln, Object.assign({}, SLIDE.to), t);
+        });
+        first = false;
       });
+      tl.eventCallback("onComplete", function () { splits.forEach(function (sp) { sp.revert(); }); });
     });
     ScrollTrigger.refresh();
   }
