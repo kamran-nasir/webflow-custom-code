@@ -3,10 +3,10 @@ import { smoothScroll } from "./smooth-scroll.js";
 import { reveals } from "./reveals.js";
 import { scrollParallax, mouseParallax } from "./parallax.js";
 import { heroIntro } from "./hero-intro.js";
-import { flagTransition } from "./flag-transition.js";
+import { finishLine } from "./finish-line.js";
 import { sprintLines } from "./sprint-lines.js";
 
-export { smoothScroll, reveals, scrollParallax, mouseParallax, heroIntro, flagTransition, sprintLines };
+export { smoothScroll, reveals, scrollParallax, mouseParallax, heroIntro, finishLine, sprintLines };
 export * from "./core.js";
 
 /* One call per campaign. Turn on only what the page uses:
@@ -18,7 +18,7 @@ export * from "./core.js";
      heroIntro: { canvas, brand, links, navRight, media, title, logo, sub, button },
      scrollParallax: true,                       // data-parallax="-5" or { items: [[".sel", -4]] }
      mouseParallax: true,                        // [data-mouse-parallax] > [data-depth] or { container, layers }
-     flagTransition: true,                       // div[data-flag-transition]
+     finishLine: true,                           // div[data-finish-line]: WebGL checkered finish line
      sprintLines: { items: ".stripes", svg: {...} }, // each racing stripe sprints in on scroll
      custom: function (lib) { ... }              // campaign-only code
    });
@@ -33,7 +33,7 @@ export function init(cfg) {
   if (cfg.sprintLines) sprintLines(cfg.sprintLines);   // before parallax: it swaps the <img> for an SVG
   if (cfg.scrollParallax) scrollParallax(cfg.scrollParallax === true ? {} : cfg.scrollParallax);
   if (cfg.mouseParallax) mouseParallax(cfg.mouseParallax === true ? {} : cfg.mouseParallax);
-  if (cfg.flagTransition) flagTransition();
+  if (cfg.finishLine) finishLine();
   if (typeof cfg.custom === "function") cfg.custom({ gsap: window.gsap, ScrollTrigger: window.ScrollTrigger });
   releaseHide();
 }
