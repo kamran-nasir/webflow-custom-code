@@ -1,4 +1,4 @@
-import { hasGsap, prefersReducedMotion, toArray, whenReady } from "./core.js";
+import { hasGsap, prefersReducedMotion, toArray, whenReady, afterGate } from "./core.js";
 import { SLIDE, splitLines } from "./split-lines.js";
 
 /* SECTION REVEALS + UNDERLINE DRAW
@@ -121,5 +121,5 @@ export function reveals(opts) {
     ScrollTrigger.refresh();
   }
 
-  whenReady(build);
+  whenReady(function () { afterGate(build); });          // after the opening curtain, if there is one
 }

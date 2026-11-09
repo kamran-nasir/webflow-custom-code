@@ -7,6 +7,12 @@ init({
   name: "grand-prix",
 
   smoothScroll: true,
+  // Opening animation: five columns in the road-stripe colours lift away left to right; everything else starts after.
+  // Keep the gradient in head.html (html.curtain-on) in the same colour order.
+  curtain: { colors: [
+    "var(--brand--teal-700, #29615A)", "var(--neutral--gray-400, #969696)", "var(--brand--green-500, #01A982)",
+    "var(--neutral--gray-350, #C8C8C8)", "var(--brand--mint-400, #6ED2B4)"
+  ] },
 
   // Page-load sequence: nav drops in, video thumbnail rises, headline letters pop, copy + CTA follow.
   heroIntro: {

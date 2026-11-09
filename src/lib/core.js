@@ -57,3 +57,10 @@ export function marker(name) {
 export function releaseHide() {
   document.documentElement.classList.remove("anim-hide");
 }
+
+/* OPENING GATE
+   A curtain (curtain.js) can cover the page while it loads. Everything that should start AFTER it has
+   cleared (hero intro, scroll reveals) waits on this gate. Without a curtain the gate is already open. */
+let gate = Promise.resolve();
+export function setGate(promise) { gate = promise; }
+export function afterGate(fn) { gate.then(fn); }

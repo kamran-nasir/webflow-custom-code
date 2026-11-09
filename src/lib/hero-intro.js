@@ -1,4 +1,4 @@
-import { hasGsap, prefersReducedMotion, toArray, first, whenReady } from "./core.js";
+import { hasGsap, prefersReducedMotion, toArray, first, whenReady, afterGate } from "./core.js";
 import { SLIDE, splitLines } from "./split-lines.js";
 
 /* HERO INTRO
@@ -64,7 +64,7 @@ export function heroIntro(cfg) {
     if (has(el.button))   gsap.set(el.button,   { autoAlpha: 0, scale: 0.8 });
     done();                                          // GSAP owns visibility from here
 
-    const tl = gsap.timeline({ defaults: { ease: "power3.out" }, onComplete: function () {
+    const tl = gsap.timeline({ paused: true, defaults: { ease: "power3.out" }, onComplete: function () {
       if (has(el.canvas)) el.canvas.style.clipPath = "";
       splits.forEach(function (sp) { sp.revert(); });
     } });
@@ -83,6 +83,7 @@ export function heroIntro(cfg) {
     if (has(el.logo))     tl.to(el.logo,     { autoAlpha: 1, x: 0, duration: 0.8 }, t + 0.9);
     if (subLines.length)  tl.to(subLines,    Object.assign({}, SLIDE.to, { stagger: SLIDE.step }), t + 0.9);
     if (has(el.button))   tl.to(el.button,   { autoAlpha: 1, scale: 1, duration: 0.8, ease: "back.out(2)" }, t + 1.3);
+    afterGate(function () { tl.play(); });             // waits for the opening curtain, if there is one
   }
 
   whenReady(build);
