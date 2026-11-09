@@ -10,7 +10,7 @@ import { hasGsap, prefersReducedMotion, toArray } from "./core.js";
    sprintLines({
      items: ".stripes",                         // the <img> to replace
      svg: { width: 3200, height: 668,           // artwork viewBox
-            stripes: [ { color: "#29615a", points: [[x,y],[x,y],[x,y],[x,y]] }, ... ] },
+            stripes: [ { color: "var(--brand--teal-700)", points: [[x,y],[x,y],[x,y],[x,y]] }, ... ] },
      feather: 360,                               // softness of the leading edge (viewBox units)
      slant: 20,                                  // leading-edge angle in degrees
      duration: 1.3, stagger: 0.16,               // per line / between lines (seconds)
@@ -54,7 +54,8 @@ export function sprintLines(cfg) {
       const skew = node("g", { transform: "skewX(" + -(cfg.slant != null ? cfg.slant : 20) + ")" }, mask);
       const sweep = node("rect", { x: -R, y: 0, width: R, height: H + 2, fill: "url(#sprint-fade-" + n + ")" }, skew);
       const wrap = node("g", { mask: "url(#sprint-mask-" + n + "-" + i + ")" }, svg);
-      const poly = node("polygon", { fill: s.color, points: s.points.map(function (p) { return p.join(","); }).join(" ") }, wrap);
+      const poly = node("polygon", { points: s.points.map(function (p) { return p.join(","); }).join(" ") }, wrap);
+      poly.style.fill = s.color;                         // hex or var(--webflow-variable, #fallback)
       return { sweep: sweep, poly: poly };
     });
 

@@ -5,7 +5,7 @@ import { prefersReducedMotion, toArray } from "./core.js";
    (e.g. between two sections). JS builds a canvas inside it: a perspective checkered strip whose
    tiles ripple with noise and race with the page scroll.
    Attributes on the div (all optional):
-     data-finish-dark="#0E0E0E"   data-finish-light="#FFFFFF"   tile colours
+     data-finish-dark / data-finish-light   tile colours: a Webflow variable, e.g. var(--brand--teal-700)
      data-finish-height="20"      band height in vw (capped at 50vh)
    Pauses when off screen. Reduced motion: one still frame. No WebGL: nothing is drawn. */
 const VERT = "attribute vec2 a_position;void main(){gl_Position=vec4(a_position,0.0,1.0);}";
@@ -45,17 +45,27 @@ const FRAG = [
 "gl_FragColor=vec4(pattern.rgb,mask*pattern.a);}"
 ].join("\n");
 
-function hex(c, fallback) {
-  const m = /^#?([0-9a-f]{6})$/i.exec((c || fallback).trim());
-  const n = parseInt(m ? m[1] : fallback.replace("#", ""), 16);
-  return [(n >> 16 & 255) / 255, (n >> 8 & 255) / 255, (n & 255) / 255];
+/* Resolve any CSS colour (hex, rgb(), or var(--webflow-variable, fallback)) to [r,g,b] in 0..1.
+   Colours come from the site's Webflow variables, so a client re-skin only changes the variables. */
+function cssColor(host, value, fallback) {
+  let v = (value || fallback).trim();
+  const m = /^var\((--[^,)]+)(?:,\s*(.+))?\)$/.exec(v);
+  if (m) {
+    const raw = getComputedStyle(host).getPropertyValue(m[1]).trim();
+    v = raw || (m[2] || fallback).trim();
+  }
+  const c = document.createElement("canvas"); c.width = c.height = 1;
+  const g = c.getContext("2d");
+  g.fillStyle = "#000"; g.fillStyle = v; g.fillRect(0, 0, 1, 1);
+  const d = g.getImageData(0, 0, 1, 1).data;
+  return [d[0] / 255, d[1] / 255, d[2] / 255];
 }
 
 export function finishLine() {
   const reduced = prefersReducedMotion();
   toArray("[data-finish-line]").forEach(function (host) {
-    const dark = hex(host.getAttribute("data-finish-dark"), "#0E0E0E");
-    const light = hex(host.getAttribute("data-finish-light"), "#FFFFFF");
+    const dark = cssColor(host, host.getAttribute("data-finish-dark"), "var(--brand--teal-700, #29615A)");
+    const light = cssColor(host, host.getAttribute("data-finish-light"), "var(--brand--mint-400, #6ED2B4)");
     const hv = parseFloat(host.getAttribute("data-finish-height")) || 20;
 
     host.setAttribute("aria-hidden", "true");
@@ -105,7 +115,7 @@ export function finishLine() {
       canvas.style.width = w + "px"; canvas.style.height = w + "px";
       // perspective ground plane: steeper on phones
       const wide = window.innerWidth >= 768;
-      canvas.style.transform = "translateX(-50%) perspective(" + (wide ? 80 : 160) + "vw) rotateX(55deg) scale(" + (wide ? 1.25 : 1.5) + ")";
+      canvas.style.transform = "translateX(-50%) perspective(" + (wide ? 80 : 160) + "vw) rotateX(55deg) scale(" + (wide ? "2.1,1.25" : "2.5,1.5") + ")";
       gl.viewport(0, 0, canvas.width, canvas.height);
       draw();
     };
