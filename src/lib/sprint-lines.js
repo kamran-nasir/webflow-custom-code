@@ -4,17 +4,15 @@ import { hasGsap, prefersReducedMotion, toArray } from "./core.js";
    Racing stripes that sprint in ONE BY ONE when their section scrolls into view.
 
    Pass the stripe geometry (taken from the artwork) and the module swaps the flat image for an inline
-   SVG with one shape per line, each with its own soft-edged mask, then races them in with a stagger.
+   SVG with one shape per line, slid in sideways one after another (never masked, so no end or corner shows).
    Plays once. Reduced motion (or no GSAP): the original image stays as it is.
 
    sprintLines({
      items: ".stripes",                         // the <img> to replace
      svg: { width: 3200, height: 668,           // artwork viewBox
             stripes: [ { color: "var(--brand--teal-700)", points: [[x,y],[x,y],[x,y],[x,y]] }, ... ] },
-     feather: 360,                               // softness of the leading edge (viewBox units)
-     slant: 20,                                  // leading-edge angle in degrees
      duration: 1.3, stagger: 0.16,               // per line / between lines (seconds)
-     kick: 220,                                  // how far each line travels while sprinting in
+     kick: 700,                                  // how far right each line starts (viewBox units)
      bleed: { top: 400, bottom: 500 },           // extend every stripe past its ends (viewBox units) so it runs
                                                  // off the section edges and no tip/corner shows
      start: "top 80%" })                         // ScrollTrigger start
@@ -41,12 +39,9 @@ export function sprintLines(cfg) {
   if (!art || !art.stripes || !art.stripes.length || !hasGsap(true) || prefersReducedMotion()) return;
   const gsap = window.gsap;
   const W = art.width, H = art.height;
-  const F = cfg.feather != null ? cfg.feather : 360;
-  const shift = Math.ceil((H + (cfg.bleed ? (cfg.bleed.top || 0) + (cfg.bleed.bottom || 0) : 0)) * Math.tan((cfg.slant != null ? cfg.slant : 20) * Math.PI / 180));
   const bleed = cfg.bleed || { top: 0, bottom: 0 };
   const bt = bleed.top || 0, bb = bleed.bottom || 0;
-  const R = W + F;                                    // sweep rect: solid for W, then a soft F-wide edge
-  const kick = cfg.kick != null ? cfg.kick : 220;
+  const kick = cfg.kick != null ? cfg.kick : 700;
   const dur = cfg.duration != null ? cfg.duration : 1.3;
   const gap = cfg.stagger != null ? cfg.stagger : 0.16;
 
@@ -55,31 +50,23 @@ export function sprintLines(cfg) {
     const svg = node("svg", { viewBox: "0 0 " + W + " " + H, preserveAspectRatio: "none", "aria-hidden": "true", focusable: "false" });
     svg.setAttribute("class", img.className);          // keep the Designer styling / positioning
     svg.style.cssText = "display:block;height:auto;overflow:visible;";
-    const defs = node("defs", {}, svg);
-    const grad = node("linearGradient", { id: "sprint-fade-" + n, x1: "0", x2: "1", y1: "0", y2: "0" }, defs);
-    node("stop", { offset: W / R, "stop-color": "#fff" }, grad);
-    node("stop", { offset: 1, "stop-color": "#000" }, grad);
-
-    const lines = art.stripes.map(function (s, i) {
-      const mask = node("mask", { id: "sprint-mask-" + n + "-" + i, maskUnits: "userSpaceOnUse", x: -W, y: -bt - 10, width: 3 * W, height: H + bt + bb + 20 }, defs);
-      const skew = node("g", { transform: "skewX(" + -(cfg.slant != null ? cfg.slant : 20) + ")" }, mask);
-      const sweep = node("rect", { x: -R, y: -bt - 10, width: R, height: H + bt + bb + 20, fill: "url(#sprint-fade-" + n + ")" }, skew);
-      const wrap = node("g", { mask: "url(#sprint-mask-" + n + "-" + i + ")" }, svg);
-      const poly = node("polygon", { points: (bt || bb ? bleedPoints(s.points, bt, bb, H) : s.points).map(function (p) { return p.join(","); }).join(" ") }, wrap);
+    const lines = art.stripes.map(function (s) {
+      const poly = node("polygon", { points: (bt || bb ? bleedPoints(s.points, bt, bb, H) : s.points).map(function (p) { return p.join(","); }).join(" ") }, svg);
       poly.style.fill = s.color;                         // hex or var(--webflow-variable, #fallback)
-      return { sweep: sweep, poly: poly };
+      return { poly: poly };
     });
 
     img.parentNode.insertBefore(svg, img);
     img.className = "";                                  // the SVG now carries the layout class
     img.style.display = "none";
 
-    gsap.set(lines.map(function (l) { return l.poly; }), { x: -kick });
+    // No masks: every stripe keeps its full (bled) length the whole time, so no end or corner is ever visible.
+    // The stripes simply slide in sideways, one after another.
+    gsap.set(lines.map(function (l) { return l.poly; }), { x: kick, autoAlpha: 0 });
     const tl = gsap.timeline({ paused: true, scrollTrigger: { trigger: svg, start: cfg.start || "top 80%", once: true } });
     lines.forEach(function (l, i) {
-      tl.to(l.sweep, { attr: { x: shift }, duration: dur, ease: "power3.inOut" }, i * gap)
-        .to(l.poly, { x: 0, duration: dur * 1.25, ease: "expo.out" }, i * gap);
+      tl.to(l.poly, { x: 0, duration: dur * 1.25, ease: "expo.out" }, i * gap)
+        .to(l.poly, { autoAlpha: 1, duration: dur * 0.3, ease: "none" }, i * gap);
     });
-    tl.add(function () { lines.forEach(function (l) { l.poly.parentNode.removeAttribute("mask"); }); });
   });
 }
