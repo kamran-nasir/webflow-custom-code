@@ -51,7 +51,7 @@ init({
   cards: {
     deck:    { items: ".cpp-rb", pin: ".cpp-slow", start: "center center", length: 1500 },   // roadblock cards: a pinned deck dealt out card by card as you scroll
     stagger: { items: ".cpp-vc", container: ".cpp-vgrid" },
-    steps:   { items: ".cpp-st", pin: ".cpp-steps", track: ".cpp-track", dot: ".cpp-dot", dotOn: ".cpp-dot-on", seg: ".cpp-seg", length: 2400 },   // How It Works: pinned; cards climb up one by one and their step tracks fill
+    stickFill: { items: ".cpp-st", container: ".cpp-steps-row", track: ".cpp-track", dot: ".cpp-dot", dotOn: ".cpp-dot-on", seg: ".cpp-seg" },   // How It Works: sticky stair-step cards are CSS (as on Halloween); this fills each card's steps on its turn
     stack:   { items: ".cpp-rc", container: ".cpp-res-cards" }
   },
 

@@ -7,6 +7,8 @@ import { hasGsap, prefersReducedMotion, toArray, whenReady } from "./core.js";
    cards({
      fan:     { items: ".card" },   // cards start piled in the middle, fanned like a hand, and spread out (once)
      deck:    { items: ".card", pin: ".section", length: 1500 },   // cards start as a deck (edges peeking above); scrolling deals them out one by one into place (pinned, scrubbed)
+     stickFill: { items: ".card", container: ".row", track: ".track", dot: ".dot", dotOn: ".dot-on", seg: ".seg" },
+                                     // Halloween-style: the stair-step + sticky layout is CSS in Webflow; this fills each card's step track on its turn
      steps:   { items: ".card", pin: ".section", track: ".track", dot: ".dot", dotOn: ".dot-on", seg: ".seg", length: 2400 },
                                      // pinned section: cards climb up into place one by one (low + tilted -> straight) and the
                                      // step track in each card fills (segment draws, dot fills, next segment...) as you scroll
@@ -67,6 +69,40 @@ function deck(cfg) {
   });
 }
 
+// Prepares one card's step track (faint track + a fill over each segment) and returns a function that adds
+// the fill sequence to a timeline at a time: segment draws, next dot fills, next segment...
+function prepTrack(card, cfg) {
+  const gsap = window.gsap;
+  const track = card.querySelector(cfg.track || ".track");
+  const dots = track ? toArray(track.querySelectorAll(cfg.dot || ".dot")) : [];
+  const segs = track ? toArray(track.querySelectorAll(cfg.seg || ".seg")) : [];
+  const first = (cfg.dotOn && track && track.querySelector(cfg.dotOn)) || dots[0];
+  const on = first ? getComputedStyle(first) : null;
+  const onBg = on && on.backgroundColor, onBorder = on && on.borderTopColor;
+  const fills = segs.map(function (seg) {
+    const color = getComputedStyle(seg).backgroundColor;
+    seg.style.position = "relative"; seg.style.background = "transparent";
+    const base = document.createElement("span"), fill = document.createElement("span");
+    base.style.cssText = "position:absolute;inset:0;opacity:0.22;background:" + color + ";";
+    fill.style.cssText = "position:absolute;inset:0;background:" + color + ";transform-origin:left center;";
+    seg.appendChild(base); seg.appendChild(fill);
+    gsap.set(fill, { scaleX: 0 });
+    return fill;
+  });
+  const filled = dots.filter(function (d) { return d !== first; });
+  const length = fills.length * 0.5;
+  return {
+    length: length,
+    add: function (tl, at) {
+      fills.forEach(function (fill, j) {
+        tl.to(fill, { scaleX: 1, duration: 0.3, ease: "none" }, at + j * 0.5);
+        if (filled[j] && on) tl.to(filled[j], { backgroundColor: onBg, borderColor: onBorder, duration: 0.2, ease: "none" }, at + j * 0.5 + 0.3);
+      });
+    }
+  };
+}
+
+// PINNED version: the section is pinned and the cards climb in one by one while the tracks fill (scrubbed).
 function steps(cfg) {
   const gsap = window.gsap, els = toArray(cfg.items);
   if (!els.length) return;
@@ -74,39 +110,35 @@ function steps(cfg) {
     defaults: { ease: "none" },
     scrollTrigger: {
       trigger: (cfg.pin && document.querySelector(cfg.pin)) || els[0].parentElement,
-      start: cfg.start || "center center", end: "+=" + (cfg.length || 2400),
+      start: cfg.start || "top top", end: "+=" + (cfg.length || 2400),
       pin: true, scrub: 0.8, anticipatePin: 1,
       refreshPriority: 9
     }
   });
   let t = 0, idx = 0;
   els.forEach(function (card) {
-    const track = card.querySelector(cfg.track || ".track");
-    const dots = track ? toArray(track.querySelectorAll(cfg.dot || ".dot")) : [];
-    const segs = track ? toArray(track.querySelectorAll(cfg.seg || ".seg")) : [];
-    const first = (cfg.dotOn && track && track.querySelector(cfg.dotOn)) || dots[0];
-    const on = first ? getComputedStyle(first) : null;
-    // each card starts low and tilted (no fade) and climbs into place on its turn; no card is ever dimmed
+    const pt = prepTrack(card, cfg);
     gsap.set(card, { y: 140, rotation: idx % 2 ? 4 : -4, scale: 0.94 });
     tl.to(card, { y: 0, rotation: 0, scale: 1, duration: 0.7, ease: "power2.out" }, t);
     idx++;
-    const fills = segs.map(function (seg) {                       // faint track + a fill that grows over it
-      const color = getComputedStyle(seg).backgroundColor;
-      seg.style.position = "relative"; seg.style.background = "transparent";
-      const base = document.createElement("span"), fill = document.createElement("span");
-      base.style.cssText = "position:absolute;inset:0;opacity:0.22;background:" + color + ";";
-      fill.style.cssText = "position:absolute;inset:0;background:" + color + ";transform-origin:left center;";
-      seg.appendChild(base); seg.appendChild(fill);
-      gsap.set(fill, { scaleX: 0 });
-      return fill;
-    });
-    const filled = dots.filter(function (d) { return d !== first; });
-    const at = t + 0.5;
-    fills.forEach(function (fill, j) {
-      tl.to(fill, { scaleX: 1, duration: 0.3 }, at + j * 0.5);
-      if (filled[j] && on) tl.to(filled[j], { backgroundColor: on.backgroundColor, borderColor: on.borderTopColor, duration: 0.2 }, at + j * 0.5 + 0.3);
-    });
-    t += 0.5 + fills.length * 0.5 + 0.2;
+    pt.add(tl, t + 0.5);
+    t += 0.5 + pt.length + 0.2;
+  });
+}
+
+// STICKY version (matches the Halloween master's process cards): the stair-step layout and the sticky pinning are
+// CSS in Webflow (position: sticky, margin-top 0/300/600/900, alternating tilt). This only fills each card's step track
+// when that card's turn comes, i.e. when its natural position reaches ~60% of the screen. Plays once.
+function stickFill(cfg) {
+  const gsap = window.gsap, els = toArray(cfg.items);
+  if (!els.length) return;
+  const row = parentOf(cfg, els);
+  els.forEach(function (card) {
+    const pt = prepTrack(card, cfg);
+    const margin = parseFloat(getComputedStyle(card).marginTop) || 0;
+    const tl = gsap.timeline({ paused: true });
+    pt.add(tl, 0.2);
+    window.ScrollTrigger.create({ trigger: row, start: "top+=" + margin + " " + (cfg.at || "60%"), once: true, onEnter: function () { tl.play(); } });
   });
 }
 
@@ -159,6 +191,7 @@ export function cards(opts) {
       if (opts.reveal) reveal(opts.reveal);
       if (opts.stairs) stairs(opts.stairs);
       if (opts.steps) steps(opts.steps);
+      if (opts.stickFill) stickFill(opts.stickFill);
       if (opts.stack) stack(opts.stack);
     });
     window.ScrollTrigger.refresh();
