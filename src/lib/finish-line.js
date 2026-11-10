@@ -10,7 +10,7 @@ import { prefersReducedMotion, toArray } from "./core.js";
    Pauses when off screen. Reduced motion: one still frame. No WebGL: nothing is drawn. */
 const VERT = "attribute vec2 a_position;void main(){gl_Position=vec4(a_position,0.0,1.0);}";
 const FRAG = [
-"precision mediump float;",
+"#ifdef GL_FRAGMENT_PRECISION_HIGH","precision highp float;","#else","precision mediump float;","#endif",
 "uniform vec2 u_resolution;uniform float u_time;uniform float u_scroll;uniform vec3 u_dark;uniform vec3 u_light;",
 "float random(vec3 pos){pos=fract(pos*vec3(0.1031,0.1030,0.0973));pos+=dot(pos,pos.yxz+33.33);return fract((pos.x+pos.y)*pos.z);}",
 "float noise(in vec3 st){vec3 i=floor(st);vec3 f=fract(st);",
@@ -98,23 +98,25 @@ export function finishLine() {
     gl.uniform3fv(gl.getUniformLocation(prog, "u_dark"), dark);
     gl.uniform3fv(gl.getUniformLocation(prog, "u_light"), light);
 
-    let scroll = 0, visible = true, raf = 0;
+    let visible = true, raf = 0, lastW = 0;
     const t0 = performance.now();
     const draw = function () {
       gl.uniform2f(uRes, canvas.width, canvas.height);
       gl.uniform1f(uTime, ((performance.now() - t0) / 1000) % 600);
-      gl.uniform1f(uScroll, scroll);
+      gl.uniform1f(uScroll, (window.scrollY || window.pageYOffset || 0) * 0.003);  // read per frame: no lag behind the page
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
     };
     const loop = function () { if (!visible) { raf = 0; return; } draw(); raf = requestAnimationFrame(loop); };
     const resize = function () {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
       const w = host.clientWidth;
+      if (w === lastW) return;                         // height-only changes (mobile URL bar) must not reallocate the canvas
+      lastW = w;
+      const wide = window.innerWidth >= 768;
+      const dpr = Math.min(window.devicePixelRatio || 1, wide ? 2 : 1.25);   // phones: far fewer pixels to shade
       canvas.width = Math.floor(w * dpr); canvas.height = Math.floor(w * dpr);
       canvas.style.width = w + "px"; canvas.style.height = w + "px";
       // perspective ground plane: steeper on phones
-      const wide = window.innerWidth >= 768;
       canvas.style.transform = "translateX(-50%) perspective(" + (wide ? 80 : 160) + "vw) rotateX(55deg) scale(" + (wide ? "2.1,1.25" : "2.5,1.5") + ")";
       gl.viewport(0, 0, canvas.width, canvas.height);
       draw();
@@ -122,7 +124,6 @@ export function finishLine() {
     resize();
     new ResizeObserver(resize).observe(host);
     if (reduced) return;                               // one still frame
-    window.addEventListener("scroll", function () { scroll = window.scrollY * 0.003; }, { passive: true });
     new IntersectionObserver(function (es) {
       es.forEach(function (e) { visible = e.isIntersecting || e.boundingClientRect.bottom <= 0; if (visible && !raf) loop(); });
     }, { threshold: 0 }).observe(host);
