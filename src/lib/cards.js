@@ -6,6 +6,8 @@ import { hasGsap, prefersReducedMotion, toArray, whenReady } from "./core.js";
 
    cards({
      fan:     { items: ".card" },   // cards start piled in the middle, fanned like a hand, and spread out (once)
+     deck:    { items: ".card", pin: ".section", length: 1500 },   // cards start as a deck (edges peeking above); scrolling deals them out one by one into place (pinned, scrubbed)
+     reveal:  { items: ".card" },   // each card rises and fades in as IT reaches the screen (once, per card)
      stagger: { items: ".card" },   // cards rise and fade in one after another (once)
      stairs:  { items: ".card" },   // cards climb into place one after another AS you scroll (scrubbed)
      stack:   { items: ".card" }    // cards 2..n start hidden behind card 1 and slide out AS you scroll (scrubbed)
@@ -32,6 +34,40 @@ function fan(cfg) {
     rotation: function (i) { return k(i) * 30; },
     duration: 0.9, ease: "power3.out", stagger: { each: 0.05, from: "center" },
     scrollTrigger: { trigger: parentOf(cfg, els), start: "top 80%", once: true }
+  });
+}
+
+function deck(cfg) {
+  const gsap = window.gsap, els = toArray(cfg.items);
+  if (els.length < 2) return;
+  const n = els.length;
+  const rects = els.map(function (e) { return e.getBoundingClientRect(); });
+  const mid = (Math.min.apply(null, rects.map(function (r) { return r.left; })) + Math.max.apply(null, rects.map(function (r) { return r.right; }))) / 2;
+  const peek = cfg.peek != null ? cfg.peek : 18;                    // px of each card's top edge showing above the one in front
+  const tilt = [0, -3, 3, -2, 2, -3];
+  els.forEach(function (e, i) { e.style.zIndex = String(n - i); });  // first card on top of the deck, dealt first
+  const tl = gsap.timeline({
+    defaults: { ease: "power3.out", duration: 1 },
+    scrollTrigger: {
+      trigger: (cfg.pin && document.querySelector(cfg.pin)) || els[0].parentElement,
+      start: cfg.start || "top top", end: "+=" + (cfg.length || 1500),
+      pin: true, scrub: 0.8, anticipatePin: 1
+    }
+  });
+  els.forEach(function (el, i) {
+    tl.from(el, {
+      x: mid - (rects[i].left + rects[i].width / 2),
+      y: -i * peek,
+      rotation: tilt[i % tilt.length]
+    }, i * 0.9);
+  });
+}
+
+function reveal(cfg) {
+  const gsap = window.gsap, els = toArray(cfg.items);
+  els.forEach(function (el) {
+    gsap.from(el, { autoAlpha: 0, y: 70, scale: 0.95, duration: 0.8, ease: "power3.out",
+      scrollTrigger: { trigger: el, start: "top 92%", once: true } });
   });
 }
 
@@ -72,6 +108,8 @@ export function cards(opts) {
     if (opts.stagger) stagger(opts.stagger);
     gsap.matchMedia().add(DESKTOP, function () {
       if (opts.fan) fan(opts.fan);
+      if (opts.deck) deck(opts.deck);
+      if (opts.reveal) reveal(opts.reveal);
       if (opts.stairs) stairs(opts.stairs);
       if (opts.stack) stack(opts.stack);
     });

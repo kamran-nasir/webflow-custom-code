@@ -49,7 +49,7 @@ init({
   // Card effects (desktop): roadblocks fan out from a pile, the six upgrade cards rise in one by one,
   // How It Works cards climb into place as you scroll, Proof From the Track cards slide out from behind the first
   cards: {
-    fan:     { items: ".cpp-rb" },
+    deck:    { items: ".cpp-rb", pin: ".cpp-slow", start: "center center", length: 1500 },   // roadblock cards: a pinned deck dealt out card by card as you scroll
     stagger: { items: ".cpp-vc", container: ".cpp-vgrid" },
     stairs:  { items: ".cpp-st", container: ".cpp-steps-row" },
     stack:   { items: ".cpp-rc", container: ".cpp-res-cards" }
