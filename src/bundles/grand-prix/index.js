@@ -37,7 +37,13 @@ init({
   },
 
   // Hero video thumbnail drifts a touch against the cursor.
-  mouseParallax: { container: ".cpp-hero-grid", layers: [[".cpp-hero-video", 12]] },
+  // (The mouse parallax on the hero video was removed: only the play button reacts to the mouse now.)
+  // Magnetic play button: only the circle is pulled toward the pointer
+  magnet: { items: ".cpp-play", strength: 0.35, inner: ".cpp-play-svg" },
+
+  // Click play: the text column slides away and the video opens in place at full width. Put the video URL in the
+  // .cpp-hero-video element's data-video attribute (an .mp4, or a YouTube/Vimeo embed URL).
+  videoExpand: { grid: ".cpp-hero-grid", left: ".cpp-hero-left", video: ".cpp-hero-video", play: ".cpp-play" },
 
   // Checkered-flag scroll transition between "What's slowing" and "Why choose" (empty div[data-flag-transition] in the master).
   // Black rule beside the intro copy: draws down as you scroll (scrubbed)
