@@ -46,11 +46,16 @@ init({
   videoExpand: { grid: ".cpp-hero-grid", left: ".cpp-hero-left", video: ".cpp-hero-video", play: ".cpp-play" },
 
   // Checkered-flag scroll transition between "What's slowing" and "Why choose" (empty div[data-flag-transition] in the master).
-  // Black rule beside the intro copy: draws down as you scroll (scrubbed)
-  scrollLine: { items: ".cpp-intro-text, .cpp-faq-left, .cpp-cta-left" },
-  // The intro paragraph starts at 50% opacity and fills word by word, scrubbed over the SAME scroll range as the intro rule above
-  // (default start/end/scrub of both are equal), so the text is fully filled exactly when the rule finishes drawing.
-  textFill: { items: ".cpp-intro-p", trigger: ".cpp-intro-text" },
+  // Black rules beside copy: draw down as you scroll (scrubbed). The intro rule and the intro text fill share ONE range
+  // (start/end below) that finishes while the next section is still below the fold (the next section's top sits ~80 px under
+  // the text, so the text is fully filled when its bottom is at 88% of the viewport), so the next section only appears
+  // after the text animation is complete. The FAQ and CTA rules use the default range.
+  scrollLine: [
+    { items: ".cpp-faq-left, .cpp-cta-left" },
+    { items: ".cpp-intro-text", start: "top 88%", end: "bottom 88%" }
+  ],
+  // The intro paragraph starts at 50% opacity and fills word by word over the same range as its rule.
+  textFill: { items: ".cpp-intro-p", trigger: ".cpp-intro-text", start: "top 88%", end: "bottom 88%" },
 
   // Artwork from the Figma file ("Copy as SVG"): eyebrow icons, the chevron on the card links, and the vertical square pattern
   decor: {
