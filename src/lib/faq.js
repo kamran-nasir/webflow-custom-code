@@ -9,9 +9,11 @@ import { hasGsap, prefersReducedMotion, toArray, whenReady } from "./core.js";
    faq({ items: ".question",              // the <details> elements
          icon: ".question-icon",          // inside each item; its text becomes "+" or "-"
          plus: "+", minus: "−",
-         single: true })                   // optional: accordion, one open at a time */
+         single: true,                     // optional: accordion, one open at a time
+         collapse: "(max-width: 767px)" })  // optional: media query where ALL questions start closed (the open one in the markup is ignored) */
 export function faq(opts) {
   opts = opts || {};
+  if (opts.collapse && window.matchMedia(opts.collapse).matches) toArray(opts.items).forEach(function (d) { d.removeAttribute("open"); });   // e.g. "(max-width: 767px)": every question starts closed on phones
   if (!hasGsap(false) || prefersReducedMotion()) return;
   const gsap = window.gsap;
   const plus = opts.plus || "+", minus = opts.minus || "−";
