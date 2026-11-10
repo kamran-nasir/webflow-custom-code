@@ -9,7 +9,12 @@ import { hasGsap, prefersReducedMotion, first, whenReady } from "./core.js";
      grid: ".hero-grid",      // flex row holding the text column and the video
      left: ".hero-left",      // the column that makes way
      video: ".hero-video",    // the thumbnail box; put the media URL in its data-video attribute
-     play: ".play-button" })  // click target (default: the video box)
+     play: ".play-button",    // click target (default: the video box)
+     breakpoint: "(min-width: 992px)" })   // expand effect only at/above this width; below it the video plays inline
+
+   Below the breakpoint (default "(min-width: 992px)", i.e. phones and portrait tablets, where the layout is stacked and the video is
+   already full width) there is NO expand effect: the play button just starts the video in place, nothing hides or moves.
+   Set `breakpoint` to change where the expand effect switches on.
 
    data-video can be an .mp4/.webm file, or a YouTube/Vimeo embed URL (https://www.youtube.com/embed/ID,
    https://player.vimeo.com/video/ID). With no data-video the box still expands (thumbnail only). */
@@ -21,9 +26,10 @@ export function videoExpand(opts) {
   if (!grid || !left || !video) return;
   const play = first(opts.play) || video;
   const dur = prefersReducedMotion() ? 0 : 1.1;
-  let open = false, tl = null, media = null, btn = null;
+  let open = false, inlineMode = false, tl = null, media = null, btn = null;
+  const desktop = window.matchMedia(opts.breakpoint || "(min-width: 992px)");
 
-  function mount() {
+  function mount(inline) {
     const url = video.getAttribute("data-video");
     if (url) {
       const file = /\.(mp4|webm|ogg)(\?|$)/i.test(url);
@@ -33,7 +39,9 @@ export function videoExpand(opts) {
       media.style.cssText = "position:absolute;inset:0;width:100%;height:100%;border:0;background:#000;opacity:0;z-index:2;";
       video.appendChild(media);
       gsap.to(media, { opacity: 1, duration: 0.5 });
+      if (file && media.play) { const pr = media.play(); if (pr && pr.catch) pr.catch(function () {}); }   // inside the tap: lets iOS/Android start it
     }
+    if (inline) return;                                                // inline mode: the native player controls are enough
     btn = document.createElement("button");
     btn.type = "button"; btn.setAttribute("aria-label", "Close video");
     btn.style.cssText = "position:absolute;top:16px;right:16px;z-index:3;width:44px;height:44px;border:0;border-radius:50%;background:#fff;color:#0e0e0e;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;";
@@ -45,6 +53,12 @@ export function videoExpand(opts) {
   function unmount() {
     if (media) { if (media.pause) media.pause(); media.remove(); media = null; }
     if (btn) { btn.remove(); btn = null; }
+  }
+  function playInline() {
+    if (open) return;
+    open = true; inlineMode = true;
+    gsap.to(play === video ? [] : play, { scale: 0.6, autoAlpha: 0, duration: 0.3, ease: "power2.in" });
+    mount(true);
   }
   function openIt() {
     if (open) return;
@@ -63,6 +77,11 @@ export function videoExpand(opts) {
   }
   function close() {
     if (!open) return;
+    if (inlineMode) {                                                  // inline: stop the media and bring the play button back
+      open = false; inlineMode = false; unmount();
+      gsap.set(play === video ? [] : play, { clearProps: "all" });
+      return;
+    }
     open = false; unmount();
     tl.eventCallback("onReverseComplete", function () {
       gsap.set([left, video, play], { clearProps: "all" });
@@ -71,9 +90,10 @@ export function videoExpand(opts) {
     tl.reverse();
   }
   whenReady(function () {
-    play.addEventListener("click", function (e) { if (!open) { e.preventDefault(); openIt(); } });
+    const start = function () { if (desktop.matches) openIt(); else playInline(); };
+    play.addEventListener("click", function (e) { if (!open) { e.preventDefault(); start(); } });
     if (play !== video) { play.setAttribute("role", "button"); play.setAttribute("tabindex", "0"); play.setAttribute("aria-label", "Play video");
-      play.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openIt(); } }); }
+      play.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); if (!open) start(); } }); }
     document.addEventListener("keydown", function (e) { if (e.key === "Escape") close(); });
   });
 }
