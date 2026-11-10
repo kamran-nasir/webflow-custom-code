@@ -52,10 +52,10 @@ init({
   // after the text animation is complete. The FAQ and CTA rules use the default range.
   scrollLine: [
     { items: ".cpp-faq-left, .cpp-cta-left" },
-    { items: ".cpp-intro-text", start: "top 88%", end: "bottom 88%" }
+    { items: ".cpp-intro-text", start: "top 88%", end: "bottom 88%", desktop: { trigger: ".cpp-intro", start: "center center", end: "+=900" } }
   ],
   // The intro paragraph starts at 50% opacity and fills word by word over the same range as its rule.
-  textFill: { items: ".cpp-intro-p", trigger: ".cpp-intro-text", start: "top 88%", end: "bottom 88%" },
+  textFill: { items: ".cpp-intro-p", image: ".cpp-intro-img", trigger: ".cpp-intro-text", start: "top 88%", end: "bottom 88%", desktop: { pin: ".cpp-intro", start: "center center", end: "+=900" } },
 
   // Artwork from the Figma file ("Copy as SVG"): eyebrow icons, the chevron on the card links, and the vertical square pattern
   decor: {

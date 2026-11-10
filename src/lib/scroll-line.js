@@ -16,6 +16,7 @@ export function scrollLine(opts) {
   const els = toArray(opts.items);
   if (!els.length) return;
 
+  const d = opts.desktop && window.matchMedia("(min-width: 992px)").matches ? opts.desktop : {};   // optional desktop-only start/end
   whenReady(function () {
     els.forEach(function (el) {
       const cs = getComputedStyle(el);
@@ -29,7 +30,7 @@ export function scrollLine(opts) {
       el.style.borderLeftColor = "transparent";
       gsap.fromTo(bar, { scaleY: 0 }, {
         scaleY: 1, ease: "none",
-        scrollTrigger: { trigger: el, start: opts.start || "top 80%", end: opts.end || "bottom 55%", scrub: opts.scrub != null ? opts.scrub : 0.6 }
+        scrollTrigger: { trigger: (d.trigger && el.closest(d.trigger)) || el, start: d.start || opts.start || "top 80%", end: d.end || opts.end || "bottom 55%", scrub: opts.scrub != null ? opts.scrub : 0.6 }
       });
     });
     window.ScrollTrigger.refresh();

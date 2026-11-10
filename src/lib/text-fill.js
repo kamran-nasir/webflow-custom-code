@@ -40,16 +40,22 @@ export function textFill(opts) {
   const gsap = window.gsap;
   const els = toArray(opts.items);
   if (!els.length) return;
+  const d = opts.desktop && window.matchMedia("(min-width: 992px)").matches ? opts.desktop : {};   // optional desktop-only start/end/pin
   whenReady(function () {
+    toArray(opts.image).forEach(function (img) {            // optional image that slides in from the left (plays once as it enters)
+      gsap.from(img, { x: -90, autoAlpha: 0, duration: 1.1, ease: "power3.out", scrollTrigger: { trigger: img, start: "top 85%", once: true } });
+    });
     els.forEach(function (el) {
       const words = wrapWords(el);
       if (!words.length) return;
       const trigger = (opts.trigger && (el.closest(opts.trigger) || document.querySelector(opts.trigger))) || el.parentElement;
       gsap.set(words, { opacity: opts.from != null ? opts.from : 0.5 });
       const per = 1 / words.length;
+      const pin = d.pin && el.closest(d.pin);                  // desktop: hold the section while the text fills (more scroll, slower)
+      if (pin) window.ScrollTrigger.create({ trigger: pin, start: d.start, end: d.end, pin: true, anticipatePin: 1 });
       gsap.timeline({
         defaults: { ease: "none" },
-        scrollTrigger: { trigger: trigger, start: opts.start || "top 80%", end: opts.end || "bottom 55%", scrub: opts.scrub != null ? opts.scrub : 0.6 }
+        scrollTrigger: { trigger: pin || trigger, start: d.start || opts.start || "top 80%", end: d.end || opts.end || "bottom 55%", scrub: opts.scrub != null ? opts.scrub : 0.6 }
       }).to(words, { opacity: 1, duration: per, stagger: per });
     });
     window.ScrollTrigger.refresh();
