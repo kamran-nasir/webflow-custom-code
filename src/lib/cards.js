@@ -22,6 +22,7 @@ import { hasGsap, prefersReducedMotion, toArray, whenReady } from "./core.js";
    scrollbar (scroll back up and they fold back). */
 
 const DESKTOP = "(min-width: 992px)";
+const PHONE = "(max-width: 767px)";
 
 function parentOf(cfg, els) { return (cfg.container && document.querySelector(cfg.container)) || els[0].parentElement; }
 
@@ -163,6 +164,35 @@ function stickFill(cfg) {
   });
 }
 
+// PHONE version: the step cards are a horizontal scroll-snap slider. Whenever a card becomes the active slide its step
+// track fills (card 1 fills step 1, card 2 steps 1-2 ...) and it empties again when the card leaves, so every slide change
+// replays the step animation. Nothing plays until the row has scrolled into view. Returns a cleanup for gsap.matchMedia.
+function slideFill(cfg) {
+  const gsap = window.gsap, els = toArray(cfg.items);
+  if (!els.length || !window.IntersectionObserver) return;
+  const row = parentOf(cfg, els);
+  let armed = false;
+  const live = els.map(function () { return false; });
+  const tls = els.map(function (card, idx) {
+    const pt = prepTrack(card, Object.assign({ hollowFirst: true }, cfg));
+    const tl = gsap.timeline({ paused: true, defaults: { ease: "none" } });
+    pt.addSteps(tl, idx + 1);
+    tl.duration(0.6 + 0.35 * idx);                                    // a longer sequence for later cards, about 0.6 to 1.7 s
+    return tl;
+  });
+  const io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (en) {
+      const i = els.indexOf(en.target);
+      live[i] = en.isIntersecting;
+      if (!en.isIntersecting) tls[i].pause(0);
+      else if (armed) tls[i].restart();
+    });
+  }, { root: row, threshold: 0.6 });
+  els.forEach(function (c) { io.observe(c); });
+  const st = window.ScrollTrigger.create({ trigger: row, start: "top 85%", once: true, onEnter: function () { armed = true; els.forEach(function (c, i) { if (live[i]) tls[i].restart(); }); } });
+  return function () { io.disconnect(); st.kill(); tls.forEach(function (t) { t.kill(); }); };
+}
+
 function reveal(cfg) {
   const gsap = window.gsap, els = toArray(cfg.items);
   els.forEach(function (el) {
@@ -215,6 +245,7 @@ export function cards(opts) {
       if (opts.stickFill) stickFill(opts.stickFill);
       if (opts.stack) stack(opts.stack);
     });
+    gsap.matchMedia().add(PHONE, function () { if (opts.stickFill) return slideFill(opts.stickFill); });
     window.ScrollTrigger.refresh();
   });
 }
