@@ -60,6 +60,7 @@ init({
 
   // Hover effects from the Halloween master: inline links draw an underline, filled buttons roll their label and turn the arrow
   hoverFx: {
+    lift: { items: ".cpp-rc", distance: 8, nudge: ".cpp-rc-link [data-decor]", nudgeX: 6 },   // the Go deeper cards rise and the chevron slides right
     underline: { items: ".cpp-nav-link, .cpp-foot-link, .cpp-rc-link", triggers: ".cpp-rc" },
     buttons: { items: ".cpp-pill, .cpp-cta", label: ".cpp-cta-label", icon: ".cpp-cta-ico",
       // the arrow from the design (colour follows the button's text colour)

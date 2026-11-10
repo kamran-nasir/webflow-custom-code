@@ -16,6 +16,9 @@ import { toArray, whenReady } from "./core.js";
      }
    })
 
+   Cards can also lift on hover:
+     lift: { items: ".card", distance: 8,              // px the card rises (uses `top` on a position:relative card, so it never
+             nudge: ".card-link .icon", nudgeX: 6 }      //   fights GSAP's transform/translate); nudge = an inner element that slides right
    Hover only; with reduced motion the transitions are switched off. */
 
 const EASE = "cubic-bezier(0.65, 0, 0.35, 1)";
@@ -31,6 +34,16 @@ export function hoverFx(opts) {
     css.push(items.map(function (s) { return s; }).join(", ") + "{position:relative;width:fit-content;}");
     css.push(items.map(function (s) { return s + "::after"; }).join(", ") + "{content:\"\";position:absolute;left:0;right:0;bottom:" + (u.offset != null ? u.offset : -4) + "px;height:" + (u.height || 2) + "px;border-radius:2px;background:currentColor;transform:scaleX(0);transform-origin:right center;transition:transform " + (u.duration || 0.45) + "s " + EASE + ";pointer-events:none;}");
     css.push(on.join(", ") + "{transform:scaleX(1);transform-origin:left center;}");
+  }
+  const l = opts.lift;
+  if (l && l.items) {
+    const d = l.duration || 0.4, items = l.items.split(",").map(function (x) { return x.trim(); });
+    css.push(items.join(", ") + "{position:relative;top:0;transition:top " + d + "s " + EASE + ";}");
+    css.push(items.map(function (x) { return x + ":hover"; }).join(", ") + "{top:-" + (l.distance != null ? l.distance : 8) + "px;}");
+    if (l.nudge) {
+      css.push(l.nudge + "{transition:transform " + d + "s " + EASE + ";}");
+      css.push(items.map(function (x) { return x + ":hover " + l.nudge; }).join(", ") + "{transform:translateX(" + (l.nudgeX != null ? l.nudgeX : 6) + "px);}");
+    }
   }
   const b = opts.buttons;
   let buttons = [];
@@ -48,7 +61,7 @@ export function hoverFx(opts) {
     }
     buttons = toArray(b.items);
   }
-  css.push("@media (prefers-reduced-motion: reduce){.fx-roll > span, " + ((u && u.items) ? u.items.split(",").map(function (s) { return s.trim() + "::after"; }).join(", ") + ", " : "") + (b && b.icon ? b.icon + ", " : "") + "html{transition:none !important;}}");
+  css.push("@media (prefers-reduced-motion: reduce){" + ((l && l.items) ? l.items + ", " : "") + ".fx-roll > span, " + ((u && u.items) ? u.items.split(",").map(function (s) { return s.trim() + "::after"; }).join(", ") + ", " : "") + (b && b.icon ? b.icon + ", " : "") + "html{transition:none !important;}}");
   const style = document.createElement("style");
   style.setAttribute("data-hover-fx", "");
   style.textContent = css.join("\n");
