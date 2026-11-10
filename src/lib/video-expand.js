@@ -1,7 +1,7 @@
 import { hasGsap, prefersReducedMotion, first, whenReady } from "./core.js";
 
 /* VIDEO EXPAND (the video opens in place, as on weatherkids.org)
-   Click the play button: the content beside the video fades out (its text never re-wraps) while the column collapses, the video grows
+   Click the play button: the content beside the video fades out and drifts left (its text never re-wraps) over the same time the column collapses and the video grows, the video grows
    into the freed space to full width (taller too), the play button shrinks away, then the media starts and a close
    button appears. Close (button, Escape): the media stops and everything runs back.
 
@@ -57,9 +57,9 @@ export function videoExpand(opts) {
     Array.prototype.forEach.call(left.children, function (c) { c.style.width = c.getBoundingClientRect().width + "px"; c.style.flexShrink = "0"; });
     tl = gsap.timeline({ defaults: { ease: "power3.inOut", duration: dur }, onComplete: mount });
     tl.to(play === video ? [] : play, { scale: 0, autoAlpha: 0, duration: dur ? 0.4 : 0, ease: "power2.in" }, 0)
-      .to(left, { autoAlpha: 0, duration: dur ? 0.6 : 0, ease: "power2.out" }, 0)
-      .to(left, { width: 0, marginRight: 0, paddingLeft: 0, paddingRight: 0 }, 0.1)
-      .to(video, { maxWidth: gw, marginLeft: 0, height: h }, 0.1);
+      .to(left, { autoAlpha: 0, x: -70, duration: dur, ease: "power1.inOut" }, 0)        // fades and drifts left WITH the growth, not before it
+      .to(left, { width: 0, marginRight: 0, paddingLeft: 0, paddingRight: 0 }, 0)
+      .to(video, { maxWidth: gw, marginLeft: 0, height: h }, 0);
   }
   function close() {
     if (!open) return;
