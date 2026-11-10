@@ -75,7 +75,7 @@ init({
   // Hover effects from the Halloween master: inline links draw an underline, filled buttons roll their label and turn the arrow
   hoverFx: {
     lift: { items: ".rc", distance: 8, nudge: ".rc-link [data-decor]", nudgeX: 6 },   // the Go deeper cards rise and the chevron slides right
-    underline: { items: ".nav-item, .foot-link, .rc-link", triggers: ".rc" },
+    underline: { items: ".nav-item, .partner-link, .rc-link", triggers: ".rc" },
     buttons: { items: ".pill, .cta", label: ".cta-label", icon: ".cta-ico",
       // the arrow from the design (colour follows the button's text colour)
       iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 15 15" style="display:block"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.066" d="M13.424 1.031 1.031 13.424m12.393-2.065V1.03H3.097"/></svg>' }

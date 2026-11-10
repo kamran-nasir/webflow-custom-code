@@ -6,7 +6,7 @@ import { hasGsap, prefersReducedMotion, whenReady } from "./core.js";
    Everything else (hero intro, reveals) starts only after the last column has cleared (see setGate).
 
    curtain({
-     colors: ["var(--brand--teal-700)", ...],   // one per column (a Webflow variable or any CSS colour)
+     colors: ["var(--brand--secondary)", ...],   // one per column (a Webflow variable or any CSS colour)
      duration: 0.6, stagger: 0.08, hold: 0.2,    // seconds: each column's lift, gap between columns, pause before lifting
      ease: "power3.inOut" })
 

@@ -5,7 +5,7 @@ import { prefersReducedMotion, toArray } from "./core.js";
    (e.g. between two sections). JS builds a canvas inside it: a perspective checkered strip whose
    tiles ripple with noise and race with the page scroll.
    Attributes on the div (all optional):
-     data-finish-dark / data-finish-light   tile colours: a Webflow variable, e.g. var(--brand--teal-700)
+     data-finish-dark / data-finish-light   tile colours: a Webflow variable, e.g. var(--brand--secondary)
      data-finish-height="20"      band height in vw (capped at 50vh)
    Pauses when off screen. Reduced motion: one still frame. No WebGL: nothing is drawn. */
 const VERT = "attribute vec2 a_position;void main(){gl_Position=vec4(a_position,0.0,1.0);}";
@@ -64,8 +64,8 @@ function cssColor(host, value, fallback) {
 export function finishLine() {
   const reduced = prefersReducedMotion();
   toArray("[data-finish-line]").forEach(function (host) {
-    const dark = cssColor(host, host.getAttribute("data-finish-dark"), "var(--brand--teal-700, #29615A)");
-    const light = cssColor(host, host.getAttribute("data-finish-light"), "var(--brand--mint-400, #6ED2B4)");
+    const dark = cssColor(host, host.getAttribute("data-finish-dark"), "var(--brand--secondary, #29615A)");
+    const light = cssColor(host, host.getAttribute("data-finish-light"), "var(--brand--accent, #6ED2B4)");
     const hv = parseFloat(host.getAttribute("data-finish-height")) || 20;
 
     host.setAttribute("aria-hidden", "true");

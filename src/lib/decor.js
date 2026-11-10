@@ -10,7 +10,7 @@ import { toArray, whenReady } from "./core.js";
        { target: ".card-link", svg: "<svg ...>", char: "›", where: "append" }   // replaces a trailing text character
      ],
      pattern: { size: 16.6, cols: 4, rows: 9, items: [
-       { target: ".card-1 .pattern", color: "var(--brand--green-500)", cells: [[1,0],[3,0],[2,1]] }   // [column, row] squares
+       { target: ".card-1 .pattern", color: "var(--brand--primary)", cells: [[1,0],[3,0],[2,1]] }   // [column, row] squares
      ] }
    })
 

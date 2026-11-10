@@ -6,7 +6,7 @@ import { hasGsap, prefersReducedMotion, whenReady } from "./core.js";
    from. The cover then fades away and everything else starts (see setGate in core.js).
 
    roadLoader({
-     colors: ["var(--brand--teal-700)", ...],   // 7 stripes, left to right (Webflow variables or any CSS colour)
+     colors: ["var(--brand--secondary)", ...],   // 7 stripes, left to right (Webflow variables or any CSS colour)
      background: "var(--neutral--gray-100)",     // cover colour
      logos: { left: ".cpp-hpe", right: ".cpp-logo-link img" },   // selectors of <img> elements whose src is reused
      draw: 1.2, stagger: 0.07, back: 0.8 })      // seconds

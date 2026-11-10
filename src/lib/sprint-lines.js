@@ -10,7 +10,7 @@ import { hasGsap, prefersReducedMotion, toArray } from "./core.js";
    sprintLines({
      items: ".stripes",                         // the <img> to replace
      svg: { width: 3200, height: 668,           // artwork viewBox
-            stripes: [ { color: "var(--brand--teal-700)", points: [[x,y],[x,y],[x,y],[x,y]] }, ... ] },
+            stripes: [ { color: "var(--brand--secondary)", points: [[x,y],[x,y],[x,y],[x,y]] }, ... ] },
      duration: 1.3, stagger: 0.16,               // per line / between lines (seconds)
      kick: 700,                                  // how far right each line starts (viewBox units)
      bleed: { top: 400, bottom: 500 },           // extend every stripe past its ends (viewBox units) so it runs
