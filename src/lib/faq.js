@@ -2,12 +2,14 @@ import { hasGsap, prefersReducedMotion, toArray, whenReady } from "./core.js";
 
 /* FAQ ACCORDION (for <details>/<summary> questions)
    The browser's own open/close snaps. This makes the answer slide open and shut (height tween), swaps
-   the + / - icon with a quarter turn, and fades the answer. Questions toggle independently.
+   the + / - icon with a quarter turn, and fades the answer. Questions toggle independently, or with
+   `single: true` only one stays open: opening a question closes the one that was open.
    Without JS (or with reduced motion) the plain <details> behaviour still works.
 
    faq({ items: ".question",              // the <details> elements
          icon: ".question-icon",          // inside each item; its text becomes "+" or "-"
-         plus: "+", minus: "−" }) */
+         plus: "+", minus: "−",
+         single: true })                   // optional: accordion, one open at a time */
 export function faq(opts) {
   opts = opts || {};
   if (!hasGsap(false) || prefersReducedMotion()) return;
@@ -33,10 +35,9 @@ export function faq(opts) {
         bar = icon.querySelector(".fx-v");
         gsap.set(bar, { svgOrigin: m + " " + m, rotation: det.open ? 90 : 0 });
       }
-      sum.addEventListener("click", function (e) {
-        e.preventDefault();
+      const toggle = function (opening) {
+        if (opening === det.open) return;
         gsap.killTweensOf([det, icon, answer]);
-        const opening = !det.open;
         const from = det.getBoundingClientRect().height;
         det.style.overflow = "hidden";
         if (opening) det.open = true;
@@ -51,6 +52,13 @@ export function faq(opts) {
           icon.textContent = opening ? minus : plus;
           gsap.fromTo(icon, { rotation: opening ? -90 : 90, opacity: 0.3 }, { rotation: 0, opacity: 1, duration: 0.35, ease: "back.out(2)" });
         }
+      };
+      det._fxToggle = toggle;
+      sum.addEventListener("click", function (e) {
+        e.preventDefault();
+        const opening = !det.open;
+        if (opening && opts.single) items.forEach(function (o) { if (o !== det && o.open && o._fxToggle) o._fxToggle(false); });
+        toggle(opening);
       });
     });
   });

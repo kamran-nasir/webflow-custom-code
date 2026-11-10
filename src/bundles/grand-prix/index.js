@@ -86,7 +86,7 @@ init({
   },
 
   // FAQ: answers slide open and shut, the + / - icon turns
-  faq: { items: ".cpp-q", icon: ".cpp-qi", svg: { size: 22, stroke: 1.75 }, openBg: "var(--neutral--gray-200, #E6E6E6)" },
+  faq: { items: ".cpp-q", icon: ".cpp-qi", single: true, svg: { size: 22, stroke: 1.75 }, openBg: "var(--neutral--gray-200, #E6E6E6)" },
 
   finishLine: true,
   sprintLines: {
