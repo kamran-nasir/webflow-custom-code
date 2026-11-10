@@ -14,11 +14,17 @@ export function faq(opts) {
   const gsap = window.gsap;
   const plus = opts.plus || "+", minus = opts.minus || "−";
   whenReady(function () {
-    toArray(opts.items).forEach(function (det) {
+    const items = toArray(opts.items);
+    const firstClosed = items.filter(function (d) { return !d.open; })[0];
+    let openBg = null;                                           // GSAP can't tween var(--x), so resolve it to rgb()
+    if (opts.openBg) { const t = document.createElement("i"); t.style.backgroundColor = opts.openBg; document.body.appendChild(t); openBg = getComputedStyle(t).backgroundColor; t.remove(); }
+    const closedBg = firstClosed ? getComputedStyle(firstClosed).backgroundColor : "transparent";   // what a closed question looks like
+    items.forEach(function (det) {
       const sum = det.querySelector("summary");
       const icon = opts.icon ? det.querySelector(opts.icon) : null;
       const answer = det.querySelector("summary ~ *");
       if (!sum) return;
+      if (openBg && det.open) det.style.backgroundColor = openBg;
       let bar = null;                                              // the vertical bar of the SVG plus
       if (icon && opts.svg) {
         const z = opts.svg.size || 31, w = opts.svg.stroke || 1.75, m = 15.375, a = w / 2, e = 30.75 - w / 2;
@@ -34,6 +40,7 @@ export function faq(opts) {
         const from = det.getBoundingClientRect().height;
         det.style.overflow = "hidden";
         if (opening) det.open = true;
+        if (openBg) gsap.to(det, { backgroundColor: opening ? openBg : closedBg, duration: 0.35, ease: "power1.out", clearProps: opening ? "" : "backgroundColor" });
         const to = opening ? (det.style.height = "", det.getBoundingClientRect().height) : sum.getBoundingClientRect().height;
         const done = function () { det.style.height = ""; det.style.overflow = ""; if (!opening) det.open = false; };
         gsap.fromTo(det, { height: from }, { height: to, duration: opening ? 0.45 : 0.35, ease: opening ? "power3.out" : "power2.inOut", onComplete: done });
