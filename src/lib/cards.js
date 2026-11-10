@@ -7,6 +7,9 @@ import { hasGsap, prefersReducedMotion, toArray, whenReady } from "./core.js";
    cards({
      fan:     { items: ".card" },   // cards start piled in the middle, fanned like a hand, and spread out (once)
      deck:    { items: ".card", pin: ".section", length: 1500 },   // cards start as a deck (edges peeking above); scrolling deals them out one by one into place (pinned, scrubbed)
+     steps:   { items: ".card", pin: ".section", track: ".track", dot: ".dot", dotOn: ".dot-on", seg: ".seg", length: 2400 },
+                                     // pinned section: cards come into focus one by one and the step track in each
+                                     // card fills (segment draws, dot fills, next segment...) as you scroll
      reveal:  { items: ".card" },   // each card rises and fades in as IT reaches the screen (once, per card)
      stagger: { items: ".card" },   // cards rise and fade in one after another (once)
      stairs:  { items: ".card" },   // cards climb into place one after another AS you scroll (scrubbed)
@@ -63,6 +66,46 @@ function deck(cfg) {
   });
 }
 
+function steps(cfg) {
+  const gsap = window.gsap, els = toArray(cfg.items);
+  if (!els.length) return;
+  const tl = gsap.timeline({
+    defaults: { ease: "none" },
+    scrollTrigger: {
+      trigger: (cfg.pin && document.querySelector(cfg.pin)) || els[0].parentElement,
+      start: cfg.start || "center center", end: "+=" + (cfg.length || 2400),
+      pin: true, scrub: 0.8, anticipatePin: 1
+    }
+  });
+  let t = 0;
+  els.forEach(function (card) {
+    const track = card.querySelector(cfg.track || ".track");
+    const dots = track ? toArray(track.querySelectorAll(cfg.dot || ".dot")) : [];
+    const segs = track ? toArray(track.querySelectorAll(cfg.seg || ".seg")) : [];
+    const first = (cfg.dotOn && track && track.querySelector(cfg.dotOn)) || dots[0];
+    const on = first ? getComputedStyle(first) : null;
+    gsap.set(card, { opacity: 0.3, y: 50, scale: 0.96 });
+    tl.to(card, { opacity: 1, y: 0, scale: 1, duration: 0.6, ease: "power2.out" }, t);
+    const fills = segs.map(function (seg) {                       // faint track + a fill that grows over it
+      const color = getComputedStyle(seg).backgroundColor;
+      seg.style.position = "relative"; seg.style.background = "transparent";
+      const base = document.createElement("span"), fill = document.createElement("span");
+      base.style.cssText = "position:absolute;inset:0;opacity:0.22;background:" + color + ";";
+      fill.style.cssText = "position:absolute;inset:0;background:" + color + ";transform-origin:left center;";
+      seg.appendChild(base); seg.appendChild(fill);
+      gsap.set(fill, { scaleX: 0 });
+      return fill;
+    });
+    const filled = dots.filter(function (d) { return d !== first; });
+    const at = t + 0.5;
+    fills.forEach(function (fill, j) {
+      tl.to(fill, { scaleX: 1, duration: 0.3 }, at + j * 0.5);
+      if (filled[j] && on) tl.to(filled[j], { backgroundColor: on.backgroundColor, borderColor: on.borderTopColor, duration: 0.2 }, at + j * 0.5 + 0.3);
+    });
+    t += 0.5 + fills.length * 0.5 + 0.2;
+  });
+}
+
 function reveal(cfg) {
   const gsap = window.gsap, els = toArray(cfg.items);
   els.forEach(function (el) {
@@ -111,6 +154,7 @@ export function cards(opts) {
       if (opts.deck) deck(opts.deck);
       if (opts.reveal) reveal(opts.reveal);
       if (opts.stairs) stairs(opts.stairs);
+      if (opts.steps) steps(opts.steps);
       if (opts.stack) stack(opts.stack);
     });
     window.ScrollTrigger.refresh();

@@ -51,7 +51,7 @@ init({
   cards: {
     deck:    { items: ".cpp-rb", pin: ".cpp-slow", start: "center center", length: 1500 },   // roadblock cards: a pinned deck dealt out card by card as you scroll
     stagger: { items: ".cpp-vc", container: ".cpp-vgrid" },
-    stairs:  { items: ".cpp-st", container: ".cpp-steps-row" },
+    steps:   { items: ".cpp-st", pin: ".cpp-steps", track: ".cpp-track", dot: ".cpp-dot", dotOn: ".cpp-dot-on", seg: ".cpp-seg", length: 2400 },   // How It Works: pinned; cards come into focus one by one and their step tracks fill
     stack:   { items: ".cpp-rc", container: ".cpp-res-cards" }
   },
 
