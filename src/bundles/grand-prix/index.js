@@ -25,7 +25,7 @@ init({
     label:   ".cpp-tag",
     heading: ".cpp-h2",
     text:    ".cpp-intro-p, .cpp-slow-intro, .cpp-values-sub, .cpp-steps-sub, .cpp-faq-intro, .cpp-cta-p",
-    exclude: ".cpp-hero, .cpp-nav"
+    exclude: ".cpp-hero, .cpp-nav, .cpp-intro-p"
   },
 
   // Gentle depth as sections scroll (% of the section height).
@@ -48,6 +48,9 @@ init({
   // Checkered-flag scroll transition between "What's slowing" and "Why choose" (empty div[data-flag-transition] in the master).
   // Black rule beside the intro copy: draws down as you scroll (scrubbed)
   scrollLine: { items: ".cpp-intro-text, .cpp-faq-left, .cpp-cta-left" },
+  // The intro paragraph starts at 50% opacity and fills word by word, scrubbed over the SAME scroll range as the intro rule above
+  // (default start/end/scrub of both are equal), so the text is fully filled exactly when the rule finishes drawing.
+  textFill: { items: ".cpp-intro-p", trigger: ".cpp-intro-text" },
 
   // Artwork from the Figma file ("Copy as SVG"): eyebrow icons, the chevron on the card links, and the vertical square pattern
   decor: {

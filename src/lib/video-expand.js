@@ -52,8 +52,8 @@ export function videoExpand(opts) {
     const cs = getComputedStyle(grid);
     const gw = grid.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
     const h = Math.max(video.getBoundingClientRect().height, Math.min(window.innerHeight * 0.78, gw * 9 / 16));
-    left.style.overflow = "hidden";
-    // freeze each child's width first: the column then collapses (clipped) without the text re-wrapping onto more lines
+    // freeze each child's width first: the column then collapses without the text re-wrapping onto more lines.
+    // The column is NOT clipped: the text stays whole and the (opaque) growing video slides over it, so no gap shows between them.
     Array.prototype.forEach.call(left.children, function (c) { c.style.width = c.getBoundingClientRect().width + "px"; c.style.flexShrink = "0"; });
     tl = gsap.timeline({ defaults: { ease: "power3.inOut", duration: dur }, onComplete: mount });
     tl.to(play === video ? [] : play, { scale: 0, autoAlpha: 0, duration: dur ? 0.4 : 0, ease: "power2.in" }, 0)
@@ -66,7 +66,6 @@ export function videoExpand(opts) {
     open = false; unmount();
     tl.eventCallback("onReverseComplete", function () {
       gsap.set([left, video, play], { clearProps: "all" });
-      left.style.overflow = "";
       Array.prototype.forEach.call(left.children, function (c) { c.style.width = ""; c.style.flexShrink = ""; });
     });
     tl.reverse();

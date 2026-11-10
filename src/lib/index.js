@@ -1,5 +1,6 @@
 import { marker, registerPlugins, releaseHide } from "./core.js";
 import { scrollLine } from "./scroll-line.js";
+import { textFill } from "./text-fill.js";
 import { hideHeader } from "./header.js";
 import { faq } from "./faq.js";
 import { cards } from "./cards.js";
@@ -14,7 +15,7 @@ import { heroIntro } from "./hero-intro.js";
 import { finishLine } from "./finish-line.js";
 import { sprintLines } from "./sprint-lines.js";
 
-export { scrollLine, hoverFx, decor, magnet, videoExpand, hideHeader, faq, cards, smoothScroll, reveals, scrollParallax, mouseParallax, heroIntro, finishLine, sprintLines };
+export { scrollLine, textFill, hoverFx, decor, magnet, videoExpand, hideHeader, faq, cards, smoothScroll, reveals, scrollParallax, mouseParallax, heroIntro, finishLine, sprintLines };
 export * from "./core.js";
 
 /* One call per campaign. Turn on only what the page uses:
@@ -30,6 +31,7 @@ export * from "./core.js";
      decor: { icons: [{ target: ".x", svg: "<svg/>" }], pattern: { items: [{ target: ".p", cells: [[0,0]] }] } },   // see decor.js
      hoverFx: { underline: { items: ".link" }, buttons: { items: ".btn", label: ".btn-label", icon: ".btn-icon" } },   // see hover-fx.js
      scrollLine: { items: ".block" },             // a left border that draws down as you scroll (scrubbed)
+     textFill: { items: ".block p", trigger: ".block" },   // words fill 50% -> 100% on scroll, in sync with the scrollLine
      reveals: { label: ".x", heading: ".y", text: ".z", exclude: ".hero" },
      heroIntro: { canvas, brand, links, navRight, media, title, logo, sub, button },
      scrollParallax: true,                       // data-parallax="-5" or { items: [[".sel", -4]] }
@@ -47,6 +49,7 @@ export function init(cfg) {
   if (cfg.heroIntro) heroIntro(cfg.heroIntro === true ? {} : cfg.heroIntro);
   if (cfg.reveals) reveals(cfg.reveals === true ? {} : cfg.reveals);
   if (cfg.scrollLine) scrollLine(cfg.scrollLine === true ? {} : cfg.scrollLine);   // left-border rules that draw on scroll
+  if (cfg.textFill) textFill(cfg.textFill === true ? {} : cfg.textFill);            // words fill in on scroll (sync it with a scrollLine)
   if (cfg.hideHeader) hideHeader(cfg.hideHeader === true ? {} : cfg.hideHeader);   // fixed header: hides on scroll down, shows on scroll up
   if (cfg.cards) cards(cfg.cards);                    // fan / stagger / stairs / stack card effects
   if (cfg.faq) faq(cfg.faq);                          // animated <details> accordion
