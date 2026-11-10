@@ -79,6 +79,12 @@ function prepTrack(card, cfg) {
   const first = (cfg.dotOn && track && track.querySelector(cfg.dotOn)) || dots[0];
   const on = first ? getComputedStyle(first) : null;
   const onBg = on && on.backgroundColor, onBorder = on && on.borderTopColor;
+  const offDot = dots.filter(function (d) { return d !== first; })[0];
+  const off = offDot ? getComputedStyle(offDot) : null;
+  let offBg = off && off.backgroundColor, offBorder = off && off.borderTopColor;
+  if (on && (!off || (offBg === onBg && offBorder === onBorder))) {   // design has no distinct empty dot (e.g. white on dark): use a ring
+    offBg = getComputedStyle(card).backgroundColor; offBorder = onBg;
+  }
   const fills = segs.map(function (seg) {
     const color = getComputedStyle(seg).backgroundColor;
     seg.style.position = "relative"; seg.style.background = "transparent";
@@ -90,14 +96,26 @@ function prepTrack(card, cfg) {
     return fill;
   });
   const filled = dots.filter(function (d) { return d !== first; });
-  const length = fills.length * 0.5;
+  if (cfg.hollowFirst && on) gsap.set(dots, { backgroundColor: offBg, borderColor: offBorder });   // every step starts empty (a ring)
+  const fillDot = function (tl, dot, at, dur) { tl.to(dot, { backgroundColor: onBg, borderColor: onBorder, duration: dur, ease: "none" }, at); };
   return {
-    length: length,
+    length: fills.length * 0.5,
+    // time-based sequence used by the pinned and play-once versions (first dot already on)
     add: function (tl, at) {
       fills.forEach(function (fill, j) {
         tl.to(fill, { scaleX: 1, duration: 0.3, ease: "none" }, at + j * 0.5);
-        if (filled[j] && on) tl.to(filled[j], { backgroundColor: onBg, borderColor: onBorder, duration: 0.2, ease: "none" }, at + j * 0.5 + 0.3);
+        if (filled[j] && on) fillDot(tl, filled[j], at + j * 0.5 + 0.3, 0.2);
       });
+    },
+    // scrubbed sequence: fills steps 1..count (dot, segment, dot, ...) across the timeline; scroll back and it empties again
+    addSteps: function (tl, count) {
+      const n = Math.min(count, dots.length);
+      let t = 0;
+      for (let k = 0; k < n; k++) {
+        if (k > 0 && fills[k - 1]) { tl.to(fills[k - 1], { scaleX: 1, duration: 1, ease: "none" }, t); t += 1; }
+        if (on) fillDot(tl, dots[k], t, 0.5);
+        t += 0.5;
+      }
     }
   };
 }
@@ -127,18 +145,21 @@ function steps(cfg) {
 }
 
 // STICKY version (matches the Halloween master's process cards): the stair-step layout and the sticky pinning are
-// CSS in Webflow (position: sticky, margin-top 0/300/600/900, alternating tilt). This only fills each card's step track
-// when that card's turn comes, i.e. when its natural position reaches ~60% of the screen. Plays once.
+// CSS in Webflow (position: sticky, margin-top 0/300/600/900, alternating tilt). This fills each card's step track and
+// it is tied to the scrollbar: card 1 fills step 1, card 2 steps 1-2, card 3 steps 1-3, and so on. The fill runs while that
+// card's natural position travels from `from` to `to` of the screen height; scroll back up and it empties again.
 function stickFill(cfg) {
   const gsap = window.gsap, els = toArray(cfg.items);
   if (!els.length) return;
   const row = parentOf(cfg, els);
-  els.forEach(function (card) {
-    const pt = prepTrack(card, cfg);
+  els.forEach(function (card, idx) {
+    const pt = prepTrack(card, Object.assign({ hollowFirst: true }, cfg));
     const margin = parseFloat(getComputedStyle(card).marginTop) || 0;
-    const tl = gsap.timeline({ paused: true });
-    pt.add(tl, 0.2);
-    window.ScrollTrigger.create({ trigger: row, start: "top+=" + margin + " " + (cfg.at || "60%"), once: true, onEnter: function () { tl.play(); } });
+    const tl = gsap.timeline({
+      defaults: { ease: "none" },
+      scrollTrigger: { trigger: row, start: "top+=" + margin + " " + (cfg.from || "78%"), end: "top+=" + margin + " " + (cfg.to || "38%"), scrub: cfg.scrub != null ? cfg.scrub : 0.6 }
+    });
+    pt.addSteps(tl, idx + 1);
   });
 }
 
