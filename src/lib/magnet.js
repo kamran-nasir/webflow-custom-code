@@ -20,21 +20,20 @@ export function magnet(opts) {
   whenReady(function () {
     toArray(opts.items).forEach(function (el) {
       const inner = opts.inner ? el.querySelector(opts.inner) : null;
-      const qx = gsap.quickTo(el, "x", { duration: 0.5, ease: "power3.out" }), qy = gsap.quickTo(el, "y", { duration: 0.5, ease: "power3.out" });
-      const ix = inner ? gsap.quickTo(inner, "x", { duration: 0.6, ease: "power3.out" }) : null, iy = inner ? gsap.quickTo(inner, "y", { duration: 0.6, ease: "power3.out" }) : null;
       let active = false;
+      // plain tweens with overwrite (not quickTo): a spring-back tween would otherwise kill quickTo's tween and the pull would stop working
+      const to = function (t, x, y, d, ease) { gsap.to(t, { x: x, y: y, duration: d, ease: ease, overwrite: true }); };
       window.addEventListener("pointermove", function (e) {
         const r = el.getBoundingClientRect();
         // use the un-pulled centre so the pull does not feed back into the distance
         const cx = r.left + r.width / 2 - (gsap.getProperty(el, "x") || 0), cy = r.top + r.height / 2 - (gsap.getProperty(el, "y") || 0);
         const dx = e.clientX - cx, dy = e.clientY - cy, lim = Math.max(r.width, r.height) * (0.5 + reach);
         if (Math.hypot(dx, dy) < lim) {
-          active = true; qx(dx * strength); qy(dy * strength);
-          if (inner) { ix(dx * strength * 0.5); iy(dy * strength * 0.5); }
+          active = true; to(el, dx * strength, dy * strength, 0.5, "power3.out");
+          if (inner) to(inner, dx * strength * 0.5, dy * strength * 0.5, 0.6, "power3.out");
         } else if (active) {
-          active = false;
-          gsap.to(el, { x: 0, y: 0, duration: 0.9, ease: "elastic.out(1, 0.4)", overwrite: "auto" });
-          if (inner) gsap.to(inner, { x: 0, y: 0, duration: 0.9, ease: "elastic.out(1, 0.4)", overwrite: "auto" });
+          active = false; to(el, 0, 0, 0.9, "elastic.out(1, 0.4)");
+          if (inner) to(inner, 0, 0, 0.9, "elastic.out(1, 0.4)");
         }
       }, { passive: true });
     });
