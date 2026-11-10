@@ -40,6 +40,9 @@ init({
   mouseParallax: { container: ".cpp-hero-grid", layers: [[".cpp-hero-video", 12]] },
 
   // Checkered-flag scroll transition between "What's slowing" and "Why choose" (empty div[data-flag-transition] in the master).
+  // Black rule beside the intro copy: draws down as you scroll (scrubbed)
+  scrollLine: { items: ".cpp-intro-text" },
+
   finishLine: true,
   sprintLines: {
     items: ".cpp-roads",
