@@ -41,7 +41,7 @@ init({
 
   // Checkered-flag scroll transition between "What's slowing" and "Why choose" (empty div[data-flag-transition] in the master).
   // Black rule beside the intro copy: draws down as you scroll (scrubbed)
-  scrollLine: { items: ".cpp-intro-text, .cpp-faq-left" },
+  scrollLine: { items: ".cpp-intro-text, .cpp-faq-left, .cpp-cta-left" },
 
   // Artwork from the Figma file ("Copy as SVG"): eyebrow icons, the chevron on the card links, and the vertical square pattern
   decor: {
