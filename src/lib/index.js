@@ -1,6 +1,7 @@
 import { marker, registerPlugins, releaseHide } from "./core.js";
 import { scrollLine } from "./scroll-line.js";
 import { textFill } from "./text-fill.js";
+import { sliderNav } from "./slider-nav.js";
 import { hideHeader } from "./header.js";
 import { faq } from "./faq.js";
 import { cards } from "./cards.js";
@@ -15,7 +16,7 @@ import { heroIntro } from "./hero-intro.js";
 import { finishLine } from "./finish-line.js";
 import { sprintLines } from "./sprint-lines.js";
 
-export { scrollLine, textFill, hoverFx, decor, magnet, videoExpand, hideHeader, faq, cards, smoothScroll, reveals, scrollParallax, mouseParallax, heroIntro, finishLine, sprintLines };
+export { scrollLine, textFill, sliderNav, hoverFx, decor, magnet, videoExpand, hideHeader, faq, cards, smoothScroll, reveals, scrollParallax, mouseParallax, heroIntro, finishLine, sprintLines };
 export * from "./core.js";
 
 /* One call per campaign. Turn on only what the page uses:
@@ -51,6 +52,7 @@ export function init(cfg) {
   if (cfg.scrollLine) [].concat(cfg.scrollLine === true ? {} : cfg.scrollLine).forEach(scrollLine);   // left-border rules that draw on scroll (one config, or an array of configs)
   if (cfg.textFill) [].concat(cfg.textFill === true ? {} : cfg.textFill).forEach(textFill);            // words fill in on scroll (sync it with a scrollLine)
   if (cfg.hideHeader) hideHeader(cfg.hideHeader === true ? {} : cfg.hideHeader);   // fixed header: hides on scroll down, shows on scroll up
+  if (cfg.sliderNav) sliderNav(cfg.sliderNav);                           // prev/next buttons for scroll-snap card rows (phone sliders)
   if (cfg.cards) [].concat(cfg.cards).forEach(function (c) { cards(c); });                    // fan / stagger / stairs / stack card effects
   if (cfg.faq) faq(cfg.faq);                          // animated <details> accordion
   if (cfg.magnet) magnet(cfg.magnet);                   // buttons pulled toward the pointer

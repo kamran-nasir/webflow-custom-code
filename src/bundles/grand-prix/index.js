@@ -84,6 +84,9 @@ init({
   // Fixed header: slides away on scroll down, back on scroll up
   hideHeader: { header: ".nav" },
 
+  // Phone sliders: the card rows scroll-snap in Webflow (<=767px); each has a .slider-nav block after it with prev/next buttons.
+  sliderNav: { items: ".slow-cards, .vgrid, .steps-row, .res-cards" },
+
   // Card effects (desktop): roadblocks fan out from a pile, the six upgrade cards rise in one by one,
   // How It Works cards climb into place as you scroll, Proof From the Track cards slide out from behind the first
   cards: [
