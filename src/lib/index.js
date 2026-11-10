@@ -51,7 +51,7 @@ export function init(cfg) {
   if (cfg.scrollLine) [].concat(cfg.scrollLine === true ? {} : cfg.scrollLine).forEach(scrollLine);   // left-border rules that draw on scroll (one config, or an array of configs)
   if (cfg.textFill) [].concat(cfg.textFill === true ? {} : cfg.textFill).forEach(textFill);            // words fill in on scroll (sync it with a scrollLine)
   if (cfg.hideHeader) hideHeader(cfg.hideHeader === true ? {} : cfg.hideHeader);   // fixed header: hides on scroll down, shows on scroll up
-  if (cfg.cards) cards(cfg.cards);                    // fan / stagger / stairs / stack card effects
+  if (cfg.cards) [].concat(cfg.cards).forEach(function (c) { cards(c); });                    // fan / stagger / stairs / stack card effects
   if (cfg.faq) faq(cfg.faq);                          // animated <details> accordion
   if (cfg.magnet) magnet(cfg.magnet);                   // buttons pulled toward the pointer
   if (cfg.videoExpand) videoExpand(cfg.videoExpand);    // video opens in place at full width

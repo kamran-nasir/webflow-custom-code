@@ -86,12 +86,16 @@ init({
 
   // Card effects (desktop): roadblocks fan out from a pile, the six upgrade cards rise in one by one,
   // How It Works cards climb into place as you scroll, Proof From the Track cards slide out from behind the first
-  cards: {
-    deck:    { items: ".cpp-rb", pin: ".cpp-slow", start: "center center", length: 1500 },   // roadblock cards: a pinned deck dealt out card by card as you scroll
-    stagger: { items: ".cpp-vc", container: ".cpp-vgrid" },
-    stickFill: { items: ".cpp-st", container: ".cpp-steps-row", track: ".cpp-track", dot: ".cpp-dot", dotOn: ".cpp-dot-on", seg: ".cpp-seg" },   // How It Works: sticky stair-step cards are CSS (as on Halloween); this fills each card's steps on its turn
-    stack:   { items: ".cpp-rc", container: ".cpp-res-cards" }
-  },
+  cards: [
+    {
+      deck:    { items: ".cpp-rb", pin: ".cpp-slow", start: "center center", length: 1500 },   // roadblock cards: a pinned deck dealt out card by card as you scroll
+      stagger: { items: ".cpp-vc", container: ".cpp-vgrid" },
+      stickFill: { items: ".cpp-st", container: ".cpp-steps-row", track: ".cpp-track", dot: ".cpp-dot", dotOn: ".cpp-dot-on", seg: ".cpp-seg" },   // How It Works: sticky stair-step cards are CSS (as on Halloween); this fills each card's steps on its turn
+      stack:   { items: ".cpp-rc", container: ".cpp-res-cards" }
+    },
+    { stagger: { items: ".cpp-q", container: ".cpp-faq-right" } },   // FAQ column: the questions rise in one after another (all screen sizes)
+    { stagger: { items: ".cpp-card", container: ".cpp-card" } }       // CTA form column: the form card rises in
+  ],
 
   // FAQ: answers slide open and shut, the + / - icon turns
   faq: { items: ".cpp-q", icon: ".cpp-qi", single: true, svg: { size: 22, stroke: 1.75 }, openBg: "var(--neutral--gray-200, #E6E6E6)" },
