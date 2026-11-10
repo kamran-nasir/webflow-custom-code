@@ -43,6 +43,21 @@ init({
   // Black rule beside the intro copy: draws down as you scroll (scrubbed)
   scrollLine: { items: ".cpp-intro-text" },
 
+  // Fixed header: slides away on scroll down, back on scroll up
+  hideHeader: { header: ".cpp-nav" },
+
+  // Card effects (desktop): roadblocks fan out from a pile, the six upgrade cards rise in one by one,
+  // How It Works cards climb into place as you scroll, Proof From the Track cards slide out from behind the first
+  cards: {
+    fan:     { items: ".cpp-rb" },
+    stagger: { items: ".cpp-vc", container: ".cpp-vgrid" },
+    stairs:  { items: ".cpp-st", container: ".cpp-steps-row" },
+    stack:   { items: ".cpp-rc", container: ".cpp-res-cards" }
+  },
+
+  // FAQ: answers slide open and shut, the + / - icon turns
+  faq: { items: ".cpp-q", icon: ".cpp-qi" },
+
   finishLine: true,
   sprintLines: {
     items: ".cpp-roads",
