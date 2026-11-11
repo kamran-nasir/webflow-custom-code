@@ -24,6 +24,10 @@ init({
     button:   ".cta"
   },
 
+  // The hero's line slide on every other title (card, step, resource and form titles), each when it scrolls into view. Section headings
+  // are already handled by reveals. (FAQ questions are buttons, left alone.)
+  titleSlide: { items: ".rb-title, .vc-title, .st-title, .rc-title, .card-h" },
+
   // Everything below the hero reveals as its section scrolls into view.
   reveals: {
     label:   ".tag",

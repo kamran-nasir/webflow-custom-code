@@ -19,7 +19,7 @@ import { SLIDE, splitLines } from "./split-lines.js";
    radius: corner radius of the canvas clip (match your CSS), default "24px".
 
    style: "cascade" plays a different, fully CSS-transition-like intro (everything starts together; each element has its own
-          opacity/transform duration, delay and a cubic-bezier ease). Nav logo flies in from the right (scale .01 > 1, like the reference logo tiles), the nav links fade in together, the nav button
+          opacity/transform duration, delay and a cubic-bezier ease). Nav logo flies in from the right (scale .01 > 1, like the reference logo tiles), the nav links fade in one by one, the nav button
           flies in from the left (scale .01), the headline keeps the original line slide, the copy scales up from .85, the button
           scales in last, the media thumbnail grows from .05, and a soft blurred cover wipes away left to right (cover: false to skip).
           Values copied from a reference page; see CASCADE below. Phones (<768px) slide in from the right, larger screens scale.
@@ -59,7 +59,7 @@ const EASE_WIPE  = bezier(0.89, 0.14, 0.3, 0.95);// cover wipe
    big = >= 768px (scale-ups), small = < 768px (slide in from the right). */
 const CASCADE = {
   brand:    { from: { x: 64, scale: 0.01 },    op: [0.2, 0],   tf: [0.8, 0] },   // nav logo: flies in from the right, like the reference's logo tiles
-  links:    { from: { },                       op: [1, 0.6] },
+  links:    { from: { },                       op: [0.8, 0.6], stagger: 0.1 },   // one by one (the reference fades its single nav title in)
   navRight: { from: { x: -64, scale: 0.01 },   op: [0.2, 0.1], tf: [0.8, 0.1] },
   media:    { from: { scale: 0.05 },           op: [0.6, 0.2], tf: [1.4, 0.1], opEase: EASE_CSS, tfEase: EASE_BOX },
   big: {
@@ -114,7 +114,7 @@ export function heroIntro(cfg) {
       if (!target || (Array.isArray(target) && !target.length)) return;
       gsap.set(target, Object.assign({ autoAlpha: 0 }, spec.from));
       const tf = spec.tf;
-      tl.to(target, { autoAlpha: 1, duration: spec.op[0], ease: spec.opEase || EASE_MAIN }, T0 + spec.op[1]);
+      tl.to(target, { autoAlpha: 1, duration: spec.op[0], ease: spec.opEase || EASE_MAIN, stagger: spec.stagger || 0 }, T0 + spec.op[1]);
       if (tf) tl.to(target, { x: 0, y: 0, scale: 1, duration: tf[0], ease: spec.tfEase || EASE_MAIN }, T0 + tf[1]);
       clearAll.push(function () { gsap.set(target, { clearProps: "transform,opacity,visibility" }); });
     }
