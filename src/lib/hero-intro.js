@@ -18,9 +18,64 @@ import { SLIDE, splitLines } from "./split-lines.js";
           reading order at every size. Outside the query the default sequence plays.
    radius: corner radius of the canvas clip (match your CSS), default "24px".
 
+   style: "cascade" plays a different, fully CSS-transition-like intro (everything starts together; each element has its own
+          opacity/transform duration, delay and a cubic-bezier ease). Nav logo stays put, the nav links fade in together, the nav button
+          flies in from the left (scale .01), the headline + copy scale up from .85 (phones: letters skew in from the right), the button
+          scales in last, the media thumbnail grows from .05, and a soft blurred cover wipes away left to right (cover: false to skip).
+          Values copied from a reference page; see CASCADE below. Phones (<768px) slide in from the right, larger screens scale.
    The Webflow <head> must hide these first (no flash) and mark the page, see
    animations/templates/head.html:  html.hero-intro <selectors> { visibility: hidden }
    The class is removed here once every start state is set. */
+
+/* Cubic-bezier easing (same maths as CSS cubic-bezier), returned as a GSAP ease function. */
+function bezier(x1, y1, x2, y2) {
+  const cx = 3 * x1, bx = 3 * (x2 - x1) - cx, ax = 1 - cx - bx;
+  const cy = 3 * y1, by = 3 * (y2 - y1) - cy, ay = 1 - cy - by;
+  const X = function (t) { return ((ax * t + bx) * t + cx) * t; };
+  const Y = function (t) { return ((ay * t + by) * t + cy) * t; };
+  const dX = function (t) { return (3 * ax * t + 2 * bx) * t + cx; };
+  return function (x) {
+    if (x <= 0) return 0;
+    if (x >= 1) return 1;
+    let t = x;
+    for (let i = 0; i < 8; i++) {
+      const e = X(t) - x;
+      if (Math.abs(e) < 1e-5) return Y(t);
+      const d = dX(t);
+      if (Math.abs(d) < 1e-6) break;
+      t -= e / d;
+    }
+    let lo = 0, hi = 1; t = x;
+    for (let i = 0; i < 24; i++) { const v = X(t); if (Math.abs(v - x) < 1e-5) break; if (v < x) lo = t; else hi = t; t = (lo + hi) / 2; }
+    return Y(t);
+  };
+}
+const EASE_MAIN  = bezier(0.4, 0, 0.1, 1);       // opacity + transform of nearly everything
+const EASE_BOX   = bezier(0.4, 0, 0, 1);         // media thumbnail growing from .05
+const EASE_CHAR  = bezier(0.1, 0.6, 0.35, 1);    // phone headline letters
+const EASE_CSS   = bezier(0.25, 0.1, 0.25, 1);   // CSS default "ease" (media opacity)
+const EASE_WIPE  = bezier(0.89, 0.14, 0.3, 0.95);// cover wipe
+
+/* CASCADE timings (seconds, all relative to the start). op = [duration, delay] for opacity, tf = [duration, delay] for transform.
+   big = >= 768px (scale-ups), small = < 768px (slide in from the right). */
+const CASCADE = {
+  links:    { from: { },                       op: [1, 0.6] },
+  navRight: { from: { x: -64, scale: 0.01 },   op: [0.2, 0.1], tf: [0.8, 0.1] },
+  media:    { from: { scale: 0.05 },           op: [0.6, 0.2], tf: [1.4, 0.1], opEase: EASE_CSS, tfEase: EASE_BOX },
+  big: {
+    title: { from: { scale: 0.85 }, op: [1, 0],   tf: [1, 0] },
+    sub:   { from: { scale: 0.85 }, op: [1, 0.2], tf: [1, 0.2] },
+    logo:  { from: { scale: 0.85 }, op: [1, 0.5], tf: [1, 0.5] },
+    button:{ from: { scale: 0.6 },  op: [1, 0.8], tf: [1, 0.8] }
+  },
+  small: {
+    sub:   { from: { x: 64 }, op: [1, 0.2],  tf: [1, 0.2] },
+    logo:  { from: { x: 64 }, op: [1, 0.45], tf: [1, 0.45] },
+    button:{ from: { x: 64 }, op: [1, 0.3],  tf: [1, 0.3] }
+  },
+  start: 0.2                                    // the reference starts 200 ms after DOM ready
+};
+
 export function heroIntro(cfg) {
   cfg = cfg || {};
   const root = document.documentElement;
@@ -44,7 +99,80 @@ export function heroIntro(cfg) {
   const clip = function (v, h) { return "inset(" + v + "% " + h + "% " + v + "% " + h + "% round " + RADIUS + ")"; };
   if (!Object.keys(el).some(function (k) { return has(el[k]); })) { done(); return; }
 
+
+  function cascade() {
+    const big = window.matchMedia("(min-width: 768px)").matches;
+    const C = CASCADE;
+    const set = big ? C.big : C.small;
+    const clearAll = [];
+    const tl = gsap.timeline({ paused: true, onComplete: function () {
+      clearAll.forEach(function (f) { f(); });
+    } });
+    const T0 = C.start;
+
+    // helper: hide at start, then fade (autoAlpha) + move on their own clocks
+    function item(target, spec) {
+      if (!target || (Array.isArray(target) && !target.length)) return;
+      gsap.set(target, Object.assign({ autoAlpha: 0 }, spec.from));
+      const tf = spec.tf;
+      tl.to(target, { autoAlpha: 1, duration: spec.op[0], ease: spec.opEase || EASE_MAIN }, T0 + spec.op[1]);
+      if (tf) tl.to(target, { x: 0, y: 0, scale: 1, duration: tf[0], ease: spec.tfEase || EASE_MAIN }, T0 + tf[1]);
+      clearAll.push(function () { gsap.set(target, { clearProps: "transform,opacity,visibility" }); });
+    }
+
+    // nav: logo stays, links fade together, button flies in
+    item(el.links, C.links);
+    item(el.navRight, C.navRight);
+
+    // headline
+    if (has(el.title)) {
+      if (big || !window.SplitText) {
+        item(el.title, big ? set.title : { from: { x: 64 }, op: [1, 0], tf: [1, 0] });
+      } else {
+        gsap.registerPlugin(window.SplitText);
+        const sp = window.SplitText.create(el.title, { type: "words,chars" });
+        const chars = sp.chars;
+        gsap.set(el.title, { autoAlpha: 1 });
+        gsap.set(chars, { opacity: 0, x: 64, skewX: -20 });
+        const n = Math.max(1, chars.length - 1);
+        chars.forEach(function (ch, i) {
+          const d = T0 + (i / n) * 0.3;
+          tl.to(ch, { opacity: 1, duration: 0.3, ease: EASE_MAIN }, d);
+          tl.to(ch, { x: 0, skewX: 0, duration: 0.6, ease: EASE_CHAR }, d);
+        });
+        clearAll.push(function () { sp.revert(); });
+      }
+    }
+    // copy as ONE block (not child by child)
+    item(el.sub, set.sub);
+    item(el.logo, set.logo);
+    item(el.button, set.button);
+    item(el.media, C.media);
+
+    // soft cover wipes away left to right (page background colour, blurred edge)
+    let cover = null;
+    const heroEl = (el.title && el.title.closest && el.title.closest("section")) || (el.media && el.media.closest("section"));
+    if (cfg.cover !== false && heroEl) {
+      const bgOf = function (n) { const c = getComputedStyle(n).backgroundColor; return /rgba\(.*,\s*0\)$|transparent/.test(c) ? "" : c; };
+      const bg = bgOf(heroEl) || bgOf(document.body) || "#fff";
+      if (getComputedStyle(heroEl).position === "static") { heroEl.style.position = "relative"; clearAll.push(function () { heroEl.style.position = ""; }); }
+      const wrap = document.createElement("div");
+      wrap.setAttribute("aria-hidden", "true");
+      wrap.style.cssText = "position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:5;";
+      cover = document.createElement("div");
+      cover.style.cssText = "position:absolute;top:-50%;bottom:-50%;left:0;right:-40vw;background:" + bg + ";filter:blur(8vw);transform-origin:0 100%;will-change:transform;";
+      wrap.appendChild(cover);
+      heroEl.appendChild(wrap);
+      gsap.set(cover, { x: "-20vw" });
+      tl.to(cover, { x: "120vw", duration: 0.85, ease: EASE_WIPE }, T0);
+      clearAll.push(function () { if (wrap.parentNode) wrap.parentNode.removeChild(wrap); });
+    }
+    done();                                           // GSAP owns visibility from here
+    afterGate(function () { tl.play(); });
+  }
+
   function build() {
+    if (cfg.style === "cascade") { cascade(); return; }
     const splits = [];
     let titleLines = [];
     if (has(el.title)) { const sp = splitLines(el.title); splits.push(sp); titleLines = sp.lines; }

@@ -8,11 +8,12 @@ init({
 
   smoothScroll: true,
 
-  // Page-load sequence. Desktop/tablet: nav, video thumbnail rises, headline, copy + CTA. Phones + tablets (<=991px, stacked layout): reading order
-  // nav (quick) > headline > subheading > button > HPE logo > video, matching the stacked layout top to bottom.
+  // Page-load sequence ("cascade", copied from the Dropbox x McLaren page): everything starts together, each element has its own
+  // opacity/transform delay + cubic-bezier ease. Nav logo stays; nav links fade in together (0.6s delay); nav button flies in from the left;
+  // headline, copy scale up from .85 (phones: letters skew in from the right, copy/button slide from the right); HPE logo; video thumbnail
+  // grows from .05; CTA lands last (0.8s); a soft blurred cover in the page colour wipes away left to right. See src/lib/hero-intro.js > CASCADE.
   heroIntro: {
-    order:    "reading",
-    readingQuery: "(max-width: 991px)",
+    style:    "cascade",
     brand:    ".logo-link",
     links:    ".nav-item",
     navRight: ".pill",
