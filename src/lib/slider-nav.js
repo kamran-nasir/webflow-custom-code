@@ -27,7 +27,11 @@ export function sliderNav(opts) {
         b.addEventListener("click", function (e) {
           e.preventDefault();                                          // a "#" link must not jump to the top of the page
           if (b.getAttribute("aria-disabled") === "true") return;
-          list.scrollBy({ left: (b.getAttribute("data-slider") === "next" ? 1 : -1) * step(), behavior: "smooth" });
+          // Scroll to an exact card position (not a relative scrollBy): from an in-between spot, or while iOS Safari is rubber-banding,
+          // a relative jump could aim past the start/end and leave the row stuck overscrolled (a gap before card 1).
+          const st = step(), max = Math.max(0, list.scrollWidth - list.clientWidth);
+          const i = Math.round(Math.max(0, Math.min(max, list.scrollLeft)) / st) + (b.getAttribute("data-slider") === "next" ? 1 : -1);
+          list.scrollTo({ left: Math.max(0, Math.min(max, i * st)), behavior: "smooth" });
         });
       });
       list.addEventListener("scroll", sync, { passive: true });
