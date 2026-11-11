@@ -52,7 +52,7 @@ init({
   // after the text animation is complete. The FAQ and CTA rules use the default range.
   scrollLine: [
     { items: ".faq-col-left, .cta-col-left" },
-    { items: ".intro-text", start: "top 88%", end: "bottom 88%" }
+    { items: ".intro-text, .intro-body", start: "top 88%", end: "bottom 88%" }   // .intro-body carries the rule on tablet/phone (it wraps image + copy); on desktop it is display:contents and skipped
   ],
   // The intro paragraph starts at 50% opacity and fills word by word over the same range as its rule.
   textFill: { items: ".intro-p", image: ".intro-img", trigger: ".intro-text", start: "top 88%", end: "bottom 88%" },
