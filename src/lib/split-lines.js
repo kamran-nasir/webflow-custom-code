@@ -1,12 +1,12 @@
 /* LINE SLIDE (the reference "line reveal")
    Splits a text block into its visual lines (SplitText) so each line can slide in on its own.
    Matches the gpcanada.ca text effect: every line starts shifted a full line-width to the left,
-   skewed -60deg and transparent, then eases to rest (expo.out, 0.7s) with lines 0.1s apart.
+   skewed -60deg and transparent, then eases to rest (power3.out, 1.3s) with lines 0.18s apart.
    No clipping mask, no letters: it works the same for headings, sub-headings and paragraphs. */
 export const SLIDE = {
   from: { x: "-100%", skewX: -60, autoAlpha: 0 },
-  to:   { x: 0, skewX: 0, autoAlpha: 1, duration: 0.7, ease: "expo.out" },
-  step: 0.1
+  to:   { x: 0, skewX: 0, autoAlpha: 1, duration: 1.3, ease: "power3.out" },
+  step: 0.18
 };
 
 /* -> { lines: Element[], revert: fn }  (falls back to the element itself without SplitText) */
