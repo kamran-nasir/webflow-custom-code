@@ -8,8 +8,11 @@ init({
 
   smoothScroll: true,
 
-  // Page-load sequence: nav drops in, video thumbnail rises, headline letters pop, copy + CTA follow.
+  // Page-load sequence. Desktop/tablet: nav, video thumbnail rises, headline, copy + CTA. Phones (<=767px): reading order
+  // nav (quick) > headline > subheading > button > HPE logo > video, matching the stacked layout top to bottom.
   heroIntro: {
+    order:    "reading",
+    readingQuery: "(max-width: 767px)",
     brand:    ".logo-link",
     links:    ".nav-item",
     navRight: ".pill",

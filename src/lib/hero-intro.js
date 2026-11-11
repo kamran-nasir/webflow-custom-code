@@ -12,6 +12,10 @@ import { SLIDE, splitLines } from "./split-lines.js";
      logo     small partner logo slides in                            e.g. ".hpe-logo"
      sub      sub-heading / copy (its children fade up one by one)    e.g. ".hero-subheader-wrap"
      button   hero CTA pops in                                        e.g. ".hero-btn"
+   order: "reading" plays the elements in reading / hierarchy order instead of the default (media early):
+          nav (quick, in parallel) > title > sub > button > partner logo > media. Each starts while the previous one is ~70% done.
+   readingQuery: media query where the reading order applies, e.g. "(max-width: 767px)" (phones only). Omit it to use the
+          reading order at every size. Outside the query the default sequence plays.
    radius: corner radius of the canvas clip (match your CSS), default "24px".
 
    The Webflow <head> must hide these first (no flash) and mark the page, see
@@ -72,14 +76,27 @@ export function heroIntro(cfg) {
       tl.to(box, { v: 0, h: 0, duration: 1.4, ease: "power4.inOut",
         onUpdate: function () { el.canvas.style.clipPath = clip(box.v, box.h); } }, 0.1);
     }
-    if (has(el.brand))    tl.to(el.brand,    { autoAlpha: 1, y: 0, duration: 0.7 }, t);
-    if (has(el.links))    tl.to(el.links,    { autoAlpha: 1, y: 0, duration: 0.6, stagger: 0.07 }, t + 0.1);
-    if (has(el.navRight)) tl.to(el.navRight, { autoAlpha: 1, scale: 1, duration: 0.7, ease: "back.out(2)" }, t + 0.35);
-    if (has(el.media))    tl.to(el.media,    { autoAlpha: 1, yPercent: 0, duration: 1.1 }, t + 0.1);
-    if (titleLines.length) tl.to(titleLines, Object.assign({}, SLIDE.to, { stagger: SLIDE.step }), t + 0.3);
-    if (has(el.logo))     tl.to(el.logo,     { autoAlpha: 1, x: 0, duration: 0.8 }, t + 0.9);
-    if (subLines.length)  tl.to(subLines,    { autoAlpha: 1, y: 0, duration: 0.7, stagger: 0.12 }, t + 0.9);
-    if (has(el.button))   tl.to(el.button,   { autoAlpha: 1, scale: 1, duration: 0.8, ease: "back.out(2)" }, t + 1.3);
+    const reading = cfg.order === "reading" && (!cfg.readingQuery || window.matchMedia(cfg.readingQuery).matches);
+    if (reading) {
+      // 1 nav (small, quick, in parallel) 2 title 3 sub 4 button 5 partner logo 6 media. Overlapped so it feels like one flow (~2.3s).
+      if (has(el.brand))    tl.to(el.brand,    { autoAlpha: 1, y: 0, duration: 0.6 }, t);
+      if (has(el.links))    tl.to(el.links,    { autoAlpha: 1, y: 0, duration: 0.5, stagger: 0.06 }, t + 0.05);
+      if (has(el.navRight)) tl.to(el.navRight, { autoAlpha: 1, scale: 1, duration: 0.6, ease: "back.out(2)" }, t + 0.15);
+      if (titleLines.length) tl.to(titleLines, Object.assign({}, SLIDE.to, { stagger: SLIDE.step }), t + 0.2);
+      if (subLines.length)  tl.to(subLines,    { autoAlpha: 1, y: 0, duration: 0.7, stagger: 0.12 }, t + 0.8);
+      if (has(el.button))   tl.to(el.button,   { autoAlpha: 1, scale: 1, duration: 0.7, ease: "back.out(2)" }, t + 1.1);
+      if (has(el.logo))     tl.to(el.logo,     { autoAlpha: 1, x: 0, duration: 0.7 }, t + 1.3);
+      if (has(el.media))    tl.to(el.media,    { autoAlpha: 1, yPercent: 0, duration: 1.0 }, t + 1.4);
+    } else {
+      if (has(el.brand))    tl.to(el.brand,    { autoAlpha: 1, y: 0, duration: 0.7 }, t);
+      if (has(el.links))    tl.to(el.links,    { autoAlpha: 1, y: 0, duration: 0.6, stagger: 0.07 }, t + 0.1);
+      if (has(el.navRight)) tl.to(el.navRight, { autoAlpha: 1, scale: 1, duration: 0.7, ease: "back.out(2)" }, t + 0.35);
+      if (has(el.media))    tl.to(el.media,    { autoAlpha: 1, yPercent: 0, duration: 1.1 }, t + 0.1);
+      if (titleLines.length) tl.to(titleLines, Object.assign({}, SLIDE.to, { stagger: SLIDE.step }), t + 0.3);
+      if (has(el.logo))     tl.to(el.logo,     { autoAlpha: 1, x: 0, duration: 0.8 }, t + 0.9);
+      if (subLines.length)  tl.to(subLines,    { autoAlpha: 1, y: 0, duration: 0.7, stagger: 0.12 }, t + 0.9);
+      if (has(el.button))   tl.to(el.button,   { autoAlpha: 1, scale: 1, duration: 0.8, ease: "back.out(2)" }, t + 1.3);
+    }
     afterGate(function () { tl.play(); });             // waits for the opening curtain, if there is one
   }
 
