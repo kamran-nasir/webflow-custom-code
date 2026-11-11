@@ -19,8 +19,8 @@ import { SLIDE, splitLines } from "./split-lines.js";
    radius: corner radius of the canvas clip (match your CSS), default "24px".
 
    style: "cascade" plays a different, fully CSS-transition-like intro (everything starts together; each element has its own
-          opacity/transform duration, delay and a cubic-bezier ease). Nav logo stays put, the nav links fade in together, the nav button
-          flies in from the left (scale .01), the headline + copy scale up from .85 (phones: letters skew in from the right), the button
+          opacity/transform duration, delay and a cubic-bezier ease). Nav logo flies in from the right (scale .01 > 1, like the reference logo tiles), the nav links fade in together, the nav button
+          flies in from the left (scale .01), the headline keeps the original line slide, the copy scales up from .85, the button
           scales in last, the media thumbnail grows from .05, and a soft blurred cover wipes away left to right (cover: false to skip).
           Values copied from a reference page; see CASCADE below. Phones (<768px) slide in from the right, larger screens scale.
    The Webflow <head> must hide these first (no flash) and mark the page, see
@@ -52,18 +52,17 @@ function bezier(x1, y1, x2, y2) {
 }
 const EASE_MAIN  = bezier(0.4, 0, 0.1, 1);       // opacity + transform of nearly everything
 const EASE_BOX   = bezier(0.4, 0, 0, 1);         // media thumbnail growing from .05
-const EASE_CHAR  = bezier(0.1, 0.6, 0.35, 1);    // phone headline letters
 const EASE_CSS   = bezier(0.25, 0.1, 0.25, 1);   // CSS default "ease" (media opacity)
 const EASE_WIPE  = bezier(0.89, 0.14, 0.3, 0.95);// cover wipe
 
 /* CASCADE timings (seconds, all relative to the start). op = [duration, delay] for opacity, tf = [duration, delay] for transform.
    big = >= 768px (scale-ups), small = < 768px (slide in from the right). */
 const CASCADE = {
+  brand:    { from: { x: 64, scale: 0.01 },    op: [0.2, 0],   tf: [0.8, 0] },   // nav logo: flies in from the right, like the reference's logo tiles
   links:    { from: { },                       op: [1, 0.6] },
   navRight: { from: { x: -64, scale: 0.01 },   op: [0.2, 0.1], tf: [0.8, 0.1] },
   media:    { from: { scale: 0.05 },           op: [0.6, 0.2], tf: [1.4, 0.1], opEase: EASE_CSS, tfEase: EASE_BOX },
   big: {
-    title: { from: { scale: 0.85 }, op: [1, 0],   tf: [1, 0] },
     sub:   { from: { scale: 0.85 }, op: [1, 0.2], tf: [1, 0.2] },
     logo:  { from: { scale: 0.85 }, op: [1, 0.5], tf: [1, 0.5] },
     button:{ from: { scale: 0.6 },  op: [1, 0.8], tf: [1, 0.8] }
@@ -120,28 +119,18 @@ export function heroIntro(cfg) {
       clearAll.push(function () { gsap.set(target, { clearProps: "transform,opacity,visibility" }); });
     }
 
-    // nav: logo stays, links fade together, button flies in
+    // nav: logo flies in from the right, links fade together, button flies in from the left
+    item(el.brand, C.brand);
     item(el.links, C.links);
     item(el.navRight, C.navRight);
 
-    // headline
+    // headline: the library's original line slide (kept as it was), starting with the nav button
     if (has(el.title)) {
-      if (big || !window.SplitText) {
-        item(el.title, big ? set.title : { from: { x: 64 }, op: [1, 0], tf: [1, 0] });
-      } else {
-        gsap.registerPlugin(window.SplitText);
-        const sp = window.SplitText.create(el.title, { type: "words,chars" });
-        const chars = sp.chars;
-        gsap.set(el.title, { autoAlpha: 1 });
-        gsap.set(chars, { opacity: 0, x: 64, skewX: -20 });
-        const n = Math.max(1, chars.length - 1);
-        chars.forEach(function (ch, i) {
-          const d = T0 + (i / n) * 0.3;
-          tl.to(ch, { opacity: 1, duration: 0.3, ease: EASE_MAIN }, d);
-          tl.to(ch, { x: 0, skewX: 0, duration: 0.6, ease: EASE_CHAR }, d);
-        });
-        clearAll.push(function () { sp.revert(); });
-      }
+      const sp = splitLines(el.title);
+      gsap.set(el.title, { autoAlpha: 1 });
+      gsap.set(sp.lines, Object.assign({}, SLIDE.from));
+      tl.to(sp.lines, Object.assign({}, SLIDE.to, { stagger: SLIDE.step }), T0);
+      clearAll.push(function () { sp.revert(); });
     }
     // copy as ONE block (not child by child)
     item(el.sub, set.sub);

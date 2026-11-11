@@ -9,8 +9,8 @@ init({
   smoothScroll: true,
 
   // Page-load sequence ("cascade", copied from the Dropbox x McLaren page): everything starts together, each element has its own
-  // opacity/transform delay + cubic-bezier ease. Nav logo stays; nav links fade in together (0.6s delay); nav button flies in from the left;
-  // headline, copy scale up from .85 (phones: letters skew in from the right, copy/button slide from the right); HPE logo; video thumbnail
+  // opacity/transform delay + cubic-bezier ease. Nav logo flies in from the right (scale .01 > 1, 0.8s); nav links fade in together (0.6s delay); nav button flies in from the left;
+  // headline keeps the library's original line slide; copy scales up from .85 (phones: copy/button slide from the right); HPE logo; video thumbnail
   // grows from .05; CTA lands last (0.8s); a soft blurred cover in the page colour wipes away left to right. See src/lib/hero-intro.js > CASCADE.
   heroIntro: {
     style:    "cascade",
