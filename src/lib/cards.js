@@ -15,6 +15,7 @@ import { hasGsap, prefersReducedMotion, toArray, whenReady } from "./core.js";
      reveal:  { items: ".card" },   // each card rises and fades in as IT reaches the screen (once, per card)
      stagger: { items: ".card" },   // cards rise and fade in one after another (once)
      stairs:  { items: ".card" },   // cards climb into place one after another AS you scroll (scrubbed)
+     slideUp: [{ items: ".card", container: ".row" }]   // PHONE sliders only (<=767px): the cards of each slider row rise and fade in one after another when the row scrolls into view (once)
      stack:   { items: ".card" }    // cards 2..n start hidden behind card 1 and slide out AS you scroll (scrubbed)
    })
 
@@ -193,6 +194,20 @@ function slideFill(cfg) {
   return function () { io.disconnect(); st.kill(); tls.forEach(function (t) { t.kill(); }); };
 }
 
+// PHONE sliders: cfg is one { items, container } or a list of them. Each row's cards rise and fade in, staggered, when the row
+// reaches ~85% down the screen (once). Every card is included (also those off-screen to the right) so a swipe never shows a hidden one.
+function slideUp(cfg) {
+  const gsap = window.gsap;
+  (Array.isArray(cfg) ? cfg : [cfg]).forEach(function (c) {
+    const els = toArray(c.items);
+    if (!els.length) return;
+    gsap.from(els, {
+      autoAlpha: 0, y: 48, duration: 0.8, ease: "power3.out", stagger: 0.12, clearProps: "opacity,visibility,transform",
+      scrollTrigger: { trigger: parentOf(c, els), start: "top 85%", once: true }
+    });
+  });
+}
+
 function reveal(cfg) {
   const gsap = window.gsap, els = toArray(cfg.items);
   els.forEach(function (el) {
@@ -245,7 +260,10 @@ export function cards(opts) {
       if (opts.stickFill) stickFill(opts.stickFill);
       if (opts.stack) stack(opts.stack);
     });
-    gsap.matchMedia().add(PHONE, function () { if (opts.stickFill) return slideFill(opts.stickFill); });
+    gsap.matchMedia().add(PHONE, function () {
+      if (opts.slideUp) slideUp(opts.slideUp);
+      if (opts.stickFill) return slideFill(opts.stickFill);
+    });
     window.ScrollTrigger.refresh();
   });
 }

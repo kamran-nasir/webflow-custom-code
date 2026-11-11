@@ -94,7 +94,13 @@ init({
       deck:    { items: ".rb", pin: ".slow", start: "center center", length: 1500 },   // roadblock cards: a pinned deck dealt out card by card as you scroll
       stagger: { items: ".vc", container: ".vgrid" },
       stickFill: { items: ".st", container: ".steps-row", track: ".track", dot: ".dot", dotOn: ".dot-on", seg: ".seg" },   // How It Works: sticky stair-step cards are CSS (as on Halloween); this fills each card's steps on its turn
-      stack:   { items: ".rc", container: ".res-cards" }
+      stack:   { items: ".rc", container: ".res-cards" },
+      // Phones (sliders): each card row rises + fades in, one card after another, when its section scrolls into view. (.vc already does this via stagger above.)
+      slideUp: [
+        { items: ".rb", container: ".slow-cards" },
+        { items: ".st", container: ".steps-row" },
+        { items: ".rc", container: ".res-cards" }
+      ]
     },
     { stagger: { items: ".acc-item", container: ".faq-col-right" } },   // FAQ column: the questions rise in one after another (all screen sizes)
     { stagger: { items: ".card", container: ".card" } }       // CTA form column: the form card rises in
