@@ -9,8 +9,8 @@ export const SLIDE = {
   step: 0.18
 };
 
-/* Centred text has no "side" to slide in from: it rises from below instead (same ease, duration and stagger). */
-export const RISE = { from: { y: 40, autoAlpha: 0 } };
+/* Centred text has no "side" to slide in from: it comes up from below instead. Same effect as SLIDE (a full line away, skewed -60deg, transparent; same ease, duration and stagger), only the direction changes: bottom to top. */
+export const RISE = { from: { y: "100%", skewX: -60, autoAlpha: 0 } };
 export function slideFrom(el) {
   return getComputedStyle(el).textAlign === "center" ? RISE.from : SLIDE.from;
 }
