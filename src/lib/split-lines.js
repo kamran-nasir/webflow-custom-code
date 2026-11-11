@@ -9,6 +9,12 @@ export const SLIDE = {
   step: 0.18
 };
 
+/* Centred text has no "side" to slide in from: it rises from below instead (same ease, duration and stagger). */
+export const RISE = { from: { y: 40, autoAlpha: 0 } };
+export function slideFrom(el) {
+  return getComputedStyle(el).textAlign === "center" ? RISE.from : SLIDE.from;
+}
+
 /* -> { lines: Element[], revert: fn }  (falls back to the element itself without SplitText) */
 export function splitLines(el) {
   if (!window.SplitText) return { lines: [el], revert: function () {} };

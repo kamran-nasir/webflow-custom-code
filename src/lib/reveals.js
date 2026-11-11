@@ -1,5 +1,5 @@
 import { hasGsap, prefersReducedMotion, toArray, whenReady, afterGate } from "./core.js";
-import { SLIDE, splitLines } from "./split-lines.js";
+import { SLIDE, slideFrom, splitLines } from "./split-lines.js";
 
 /* SECTION REVEALS + UNDERLINE DRAW
    Mark elements in Webflow with a class or attribute (no code needed):
@@ -108,10 +108,10 @@ export function reveals(opts) {
           const sp = splitLines(el);
           splits.push(sp);
           gsap.set(el, { autoAlpha: 1 });                  // the block shows; its lines start hidden
-          gsap.set(sp.lines, Object.assign({}, SLIDE.from));
+          gsap.set(sp.lines, Object.assign({}, slideFrom(el)));
           sp.lines.forEach(function (ln, i) {
             if (i > 0) t += STEP;
-            tl.to(ln, Object.assign({}, SLIDE.to), t);
+            tl.to(ln, Object.assign({}, SLIDE.to, { y: 0 }), t);
           });
           t += DEFAULTS.gap.heading;
         } else {                                           // label / copy: the earlier fade-up
