@@ -1,5 +1,5 @@
 import { hasGsap, prefersReducedMotion, toArray, whenReady, afterGate } from "./core.js";
-import { SLIDE, slideFrom, splitLines } from "./split-lines.js";
+import { SLIDE, RISE, isCentered, splitLines } from "./split-lines.js";
 
 /* SECTION REVEALS + UNDERLINE DRAW
    Mark elements in Webflow with a class or attribute (no code needed):
@@ -105,13 +105,14 @@ export function reveals(opts) {
           tl.set(el, { autoAlpha: 1 }, t).to(el, { strokeDashoffset: 0, duration: 1.2, ease: "power2.out" }, t);
           t += DEFAULTS.gap.line;
         } else if (k === "heading") {
-          const sp = splitLines(el);
+          const centred = isCentered(el);                  // centred: masked rise from below; otherwise the side slide
+          const sp = splitLines(el, centred);
           splits.push(sp);
           gsap.set(el, { autoAlpha: 1 });                  // the block shows; its lines start hidden
-          gsap.set(sp.lines, Object.assign({}, slideFrom(el)));
+          gsap.set(sp.lines, Object.assign({}, centred ? RISE.from : SLIDE.from));
           sp.lines.forEach(function (ln, i) {
             if (i > 0) t += STEP;
-            tl.to(ln, Object.assign({}, SLIDE.to, { y: 0 }), t);
+            tl.to(ln, Object.assign({}, centred ? RISE.to : SLIDE.to), t);
           });
           t += DEFAULTS.gap.heading;
         } else {                                           // label / copy: the earlier fade-up
