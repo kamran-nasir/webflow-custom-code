@@ -194,11 +194,11 @@ function stage(cfg) {
       refreshPriority: 9
     }
   });
-  els.forEach(function (card, i) {
-    const T = i * 1.5;
+  els.forEach(function (card, i) {                                     // strictly one card at a time: climb, then its steps fill to the end, THEN the next card starts
+    const T = i ? tl.duration() + (cfg.gap != null ? cfg.gap : 0.15) : 0;
     const pt = prepTrack(card, Object.assign({ hollowFirst: true }, cfg));
-    tl.fromTo(card, { y: rise, rotation: tilt[i] * 2 }, { y: 0, rotation: tilt[i], duration: 1.2, ease: "power2.out" }, T);
-    pt.addSteps(tl, i + 1, T + 0.6, 0.5);
+    tl.fromTo(card, { y: rise, rotation: tilt[i] * 2 }, { y: 0, rotation: tilt[i], duration: 1, ease: "power2.out" }, T);
+    pt.addSteps(tl, i + 1, T + 1, 0.5);                                // starts when the card has landed; tl.duration() is now the end of this card's fill
   });
   if (cfg.hold) tl.to({}, { duration: cfg.hold });
 }
