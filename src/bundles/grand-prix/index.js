@@ -116,7 +116,7 @@ init({
 
   finishLine: true,
   // The section after the pinned roadblock deck fades in as it arrives (no hard grey edge when the pin lets go); its stripes then sprint in later.
-  sectionIn: { items: ".values", start: "top 92%", duration: 0.9 },
+  sectionIn: { items: ".values", start: "top 92%", duration: 1, y: 60 },
   sprintLines: {
     start: "top 55%",
     items: ".roads",
