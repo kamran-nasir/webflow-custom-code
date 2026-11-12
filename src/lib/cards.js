@@ -89,10 +89,12 @@ function installAnchorRelease() {
 // moved up by L in the SAME frame (and Lenis's internal position/target too, so the momentum is not cut) and nothing visibly jumps. Killing the
 // triggers reverts the pin and the animations to the natural (finished) layout; `after` re-applies anything that revert resets (step dots).
 // noShift = true when the pin is still below the viewport (anchor click): nothing above it moves, so no compensation.
-function releasePin(st, outerSt, after, noShift) {
+function releasePin(st, outerSt, after, noShift, finalize) {
   const lenis = window.lenis, L = noShift ? 0 : st.end - st.start, y = window.scrollY;
   const target = lenis ? lenis.targetScroll : 0, anim = lenis ? lenis.animatedScroll : 0;
+  const apply = finalize ? finalize() : null;   // snapshot the FINISHED card positions: killing the trigger reverts a from()/fromTo() tween to its START state (cards stacked / below the section)
   outerSt.kill(); st.kill();
+  if (apply) apply();
   if (after) after();
   if (L) {
     window.scrollTo(0, y - L);
@@ -102,7 +104,7 @@ function releasePin(st, outerSt, after, noShift) {
   window.ScrollTrigger.refresh();
 }
 
-function easePin(tl, st, pinEl, length, cfg, after) {
+function easePin(tl, st, pinEl, length, cfg, after, cards) {
   const gsap = window.gsap;
   const enter = cfg.enter != null ? cfg.enter : 1, exit = cfg.exit != null ? cfg.exit : 1;
   const kids = Array.prototype.slice.call(pinEl.children);
@@ -112,6 +114,11 @@ function easePin(tl, st, pinEl, length, cfg, after) {
   const P = Hin / 4, Q = Hout / 4;                                      // peak offsets
   if (enter > 0) tl.fromTo(kids, { y: 0 }, { y: -P, ease: "power1.out", duration: enter / 2 }, 0);
   if (exit > 0) tl.to(kids, { y: -(P + Q), ease: "power1.in", duration: exit / 2 }, tl.duration());
+  const finalize = cards && cards.length ? function () {                // finished state of the cards, read from the pin timeline at progress 1
+    tl.progress(1);
+    const rec = cards.map(function (e) { return { e: e, x: +gsap.getProperty(e, "x") || 0, y: +gsap.getProperty(e, "y") || 0, r: +gsap.getProperty(e, "rotation") || 0, sc: +gsap.getProperty(e, "scale") || 1 }; });
+    return function () { rec.forEach(function (c) { gsap.set(c.e, { x: c.x, y: c.y, rotation: c.r, scale: c.sc }); }); };
+  } : null;
   const reg = { st: st, done: false, release: null };
   if (cfg.once) { installAnchorRelease(); oncePins.push(reg); }
   const outerTl = gsap.timeline({
@@ -120,12 +127,12 @@ function easePin(tl, st, pinEl, length, cfg, after) {
       trigger: pinEl, scrub: true, invalidateOnRefresh: true,
       start: function () { return st.start - Hin; }, end: function () { return st.end + Hout; },
       refreshPriority: (st.vars.refreshPriority || 9) - 1,            // refresh after the pin trigger so st.start / st.end are current
-      onLeave: function (self) { if (cfg.once && !reg.done) { reg.done = true; releasePin(st, self, after); } }   // once: the exit hump is over, the content is back at zero offset: release the pin for good
+      onLeave: function (self) { if (cfg.once && !reg.done) { reg.done = true; releasePin(st, self, after, false, finalize); } }   // once: the exit hump is over, the content is back at zero offset: release the pin for good
     }
   })
     .fromTo(kids, { top: 0 }, { top: P, ease: "power1.in", duration: Hin }, 0)
     .fromTo(kids, { top: P }, { top: P + Q, ease: "power1.out", duration: Hout, immediateRender: false }, Hin + length);
-  reg.release = function (noShift) { if (reg.done) return; reg.done = true; releasePin(st, outerTl.scrollTrigger, after, noShift); };
+  reg.release = function (noShift) { if (reg.done) return; reg.done = true; releasePin(st, outerTl.scrollTrigger, after, noShift, finalize); };
 }
 
 function deck(cfg) {
@@ -155,7 +162,7 @@ function deck(cfg) {
   });
   // HOLD: an empty tail so the pin keeps going after the last card has landed. Without it the pin releases on the very frame the last card settles and the next section slides in over it. hold is in timeline units (the deal spacing is 0.9, one card's move is 1); scroll length per unit = length / total, so raise `length` by the same share to keep the dealing pace.
   if (cfg.hold) tl.to({}, { duration: cfg.hold });
-  easePin(tl, tl.scrollTrigger, (cfg.pin && document.querySelector(cfg.pin)) || els[0].parentElement, cfg.length || 1500, cfg);
+  easePin(tl, tl.scrollTrigger, (cfg.pin && document.querySelector(cfg.pin)) || els[0].parentElement, cfg.length || 1500, cfg, null, els);
 }
 
 // Prepares one card's step track (faint track + a fill over each segment) and returns a function that adds
@@ -309,7 +316,7 @@ function stage(cfg) {
     });
   }
   if (cfg.hold) tl.to({}, { duration: cfg.hold });
-  easePin(tl, tl.scrollTrigger, pinEl, cfg.length || 2200, cfg, function () { latches.forEach(function (l) { l.finish(); }); });   // enter + exit speed ramps (see easePin); `after` keeps the dots filled once the pin is released
+  easePin(tl, tl.scrollTrigger, pinEl, cfg.length || 2200, cfg, function () { latches.forEach(function (l) { l.finish(); }); }, els);   // enter + exit speed ramps (see easePin); `after` keeps the dots filled once the pin is released; els = the cards whose finished position is kept
 }
 
 // PHONE version: the step cards are a horizontal scroll-snap slider. Whenever a card becomes the active slide its step
