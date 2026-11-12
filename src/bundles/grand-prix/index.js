@@ -13,7 +13,8 @@ init({
   // headline keeps the library's original line slide; copy scales up from .85 (phones: copy/button slide from the right); HPE logo; video thumbnail
   // grows from .05; CTA lands last (0.8s); a soft blurred cover in the page colour wipes away left to right. See src/lib/hero-intro.js > CASCADE.
   heroIntro: {
-    style:    "cascade",
+    style:    "header",   // header bar slides down first, then its contents, then the hero (library hero-intro.js > headerSeq)
+    header:   ".nav",
     brand:    ".logo-link",
     links:    ".nav-item",
     navRight: ".pill",
