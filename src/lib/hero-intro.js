@@ -109,7 +109,14 @@ export function heroIntro(cfg) {
     const tl = gsap.timeline({ paused: true, onComplete: function () {
       clearAll.forEach(function (f) { f(); });
     } });
-    const T0 = C.start;
+    // style "header": the header bar (el.header) slides down first, then everything below runs the SAME cascade (logo scale-in, links, button, video zoom from .05, copy, CTA), just shifted later.
+    const hdr = cfg.style === "header" && el.header;
+    const T0 = C.start + (hdr ? 0.7 : 0);
+    if (hdr) {
+      gsap.set(el.header, { yPercent: -100, autoAlpha: 1 });
+      tl.to(el.header, { yPercent: 0, duration: 0.9, ease: "power3.inOut" }, C.start);
+      clearAll.push(function () { gsap.set(el.header, { clearProps: "transform,opacity,visibility" }); });
+    }
 
     // helper: hide at start, then fade (autoAlpha) + move on their own clocks
     function item(target, spec) {
@@ -143,7 +150,7 @@ export function heroIntro(cfg) {
     // soft cover wipes away left to right (page background colour, blurred edge)
     let cover = null;
     const heroEl = (el.title && el.title.closest && el.title.closest("section")) || (el.media && el.media.closest("section"));
-    if (cfg.cover !== false && heroEl) {
+    if (cfg.cover !== false && !hdr && heroEl) {
       const bgOf = function (n) { const c = getComputedStyle(n).backgroundColor; return /rgba\(.*,\s*0\)$|transparent/.test(c) ? "" : c; };
       const bg = bgOf(heroEl) || bgOf(document.body) || "#fff";
       if (getComputedStyle(heroEl).position === "static") { heroEl.style.position = "relative"; clearAll.push(function () { heroEl.style.position = ""; }); }
@@ -162,36 +169,8 @@ export function heroIntro(cfg) {
     afterGate(function () { tl.play(); });
   }
 
-  /* HEADER SEQUENCE (style: "header"): the page starts empty; the header bar slides down from the top (0.9s), then its logo, links and
-     button animate in, then the hero follows (title line slide, media rises, copy, partner logo, CTA). header: selector of the bar. */
-  function headerSeq() {
-    const clearAll = [];
-    const tl = gsap.timeline({ paused: true, defaults: { ease: "power3.out" }, onComplete: function () { clearAll.forEach(function (f) { f(); }); } });
-    const T0 = 0.15;
-    const hide = function (t, from) { if (has(t)) { gsap.set(t, Object.assign({ autoAlpha: 0 }, from)); clearAll.push(function () { gsap.set(t, { clearProps: "transform,opacity,visibility" }); }); } };
-    if (el.header) { gsap.set(el.header, { yPercent: -100, autoAlpha: 1 }); clearAll.push(function () { gsap.set(el.header, { clearProps: "transform,opacity,visibility" }); }); }
-    hide(el.brand, { y: -14 }); hide(el.links, { y: -12 }); hide(el.navRight, { scale: 0.85 });
-    hide(el.media, { y: 60 }); hide(el.sub, { y: 24 }); hide(el.logo, { y: 16 }); hide(el.button, { scale: 0.8 });
-    if (has(el.title)) { gsap.set(el.title, { autoAlpha: 1 }); }
-    let sp = null;
-    if (has(el.title)) { sp = splitLines(el.title); gsap.set(sp.lines, Object.assign({}, SLIDE.from)); clearAll.push(function () { sp.revert(); }); }
-    if (el.header) tl.to(el.header, { yPercent: 0, duration: 0.9, ease: "power3.inOut" }, T0);
-    if (has(el.brand))    tl.to(el.brand,    { autoAlpha: 1, y: 0, duration: 0.6 }, T0 + 0.65);
-    if (has(el.links))    tl.to(el.links,    { autoAlpha: 1, y: 0, duration: 0.5, stagger: 0.07 }, T0 + 0.75);
-    if (has(el.navRight)) tl.to(el.navRight, { autoAlpha: 1, scale: 1, duration: 0.6, ease: "back.out(1.6)" }, T0 + 0.95);
-    const H = T0 + 1.0;                                           // hero starts as the nav contents land
-    if (sp) tl.to(sp.lines, Object.assign({}, SLIDE.to, { stagger: SLIDE.step }), H);
-    if (has(el.media))  tl.to(el.media,  { autoAlpha: 1, y: 0, duration: 1.1 }, H + 0.1);
-    if (has(el.sub))    tl.to(el.sub,    { autoAlpha: 1, y: 0, duration: 0.8 }, H + 0.4);
-    if (has(el.logo))   tl.to(el.logo,   { autoAlpha: 1, y: 0, duration: 0.8 }, H + 0.55);
-    if (has(el.button)) tl.to(el.button, { autoAlpha: 1, scale: 1, duration: 0.7, ease: "back.out(1.6)" }, H + 0.7);
-    done();
-    afterGate(function () { tl.play(); });
-  }
-
   function build() {
-    if (cfg.style === "header") { headerSeq(); return; }
-    if (cfg.style === "cascade") { cascade(); return; }
+    if (cfg.style === "cascade" || cfg.style === "header") { cascade(); return; }
     const splits = [];
     let titleLines = [];
     if (has(el.title)) { const sp = splitLines(el.title); splits.push(sp); titleLines = sp.lines; }
