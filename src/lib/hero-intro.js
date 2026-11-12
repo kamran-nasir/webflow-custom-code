@@ -135,7 +135,7 @@ export function heroIntro(cfg) {
 
     // headline: the library's original line slide (kept as it was), starting with the nav button
     if (has(el.title)) {
-      const sp = splitLines(el.title);
+      const sp = splitLines(el.title, true);
       gsap.set(el.title, { autoAlpha: 1 });
       gsap.set(sp.lines, Object.assign({}, SLIDE.from));
       tl.to(sp.lines, Object.assign({}, SLIDE.to, { stagger: SLIDE.step }), T0);
@@ -173,7 +173,7 @@ export function heroIntro(cfg) {
     if (cfg.style === "cascade" || cfg.style === "header") { cascade(); return; }
     const splits = [];
     let titleLines = [];
-    if (has(el.title)) { const sp = splitLines(el.title); splits.push(sp); titleLines = sp.lines; }
+    if (has(el.title)) { const sp = splitLines(el.title, true); splits.push(sp); titleLines = sp.lines; }
     // copy (sub): the earlier fade-up, one block at a time. Only the heading uses the line slide.
     const subLines = has(el.sub) ? (el.sub.children.length ? Array.prototype.slice.call(el.sub.children) : [el.sub]) : [];
 

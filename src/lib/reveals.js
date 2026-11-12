@@ -105,8 +105,8 @@ export function reveals(opts) {
           tl.set(el, { autoAlpha: 1 }, t).to(el, { strokeDashoffset: 0, duration: 1.2, ease: "power2.out" }, t);
           t += DEFAULTS.gap.line;
         } else if (k === "heading") {
-          const centred = isCentered(el);                  // centred: masked rise from below; otherwise the side slide
-          const sp = splitLines(el, centred);
+          const centred = isCentered(el);                  // centred: masked rise from below; otherwise the side slide. Both are MASKED (each line is clipped to the heading's own box), so the slide starts inside the heading and never travels in from the page edge.
+          const sp = splitLines(el, true);
           splits.push(sp);
           gsap.set(el, { autoAlpha: 1 });                  // the block shows; its lines start hidden
           gsap.set(sp.lines, Object.assign({}, centred ? RISE.from : SLIDE.from));
