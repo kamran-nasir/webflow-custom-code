@@ -58,7 +58,7 @@ export function textFill(opts) {
         defaults: { ease: "none" },
         scrollTrigger: {
           trigger: pin || trigger, start: d.start || opts.start || "top 80%", end: d.end || opts.end || "bottom 55%", scrub: opts.scrub != null ? opts.scrub : 0.6,
-          onLeave: function (self) { if (opts.keep) { tl.progress(1); self.kill(); } }   // keep: once filled, it stays filled when you scroll back
+          onLeave: function (self) { if (opts.keep) { self.kill(); gsap.set(words, { opacity: 1 }); } }   // keep: once filled, it stays filled when you scroll back (kill resets the timeline, so set the finished state AFTER it)
         }
       });
       tl.to(words, { opacity: 1, duration: per, stagger: per });

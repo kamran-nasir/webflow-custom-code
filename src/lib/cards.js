@@ -200,14 +200,15 @@ function stickFill(cfg) {
   els.forEach(function (card, idx) {
     const pt = prepTrack(card, Object.assign({ hollowFirst: true }, cfg));
     const margin = parseFloat(getComputedStyle(card).marginTop) || 0;
+    let fill = null;
     const tl = gsap.timeline({
       defaults: { ease: "none" },
       scrollTrigger: {
         trigger: row, start: "top+=" + margin + " " + (cfg.from || "78%"), end: "top+=" + margin + " " + (cfg.to || "38%"), scrub: cfg.scrub != null ? cfg.scrub : 0.6,
-        onLeave: function (self) { if (cfg.keep) { tl.progress(1); self.kill(); } }   // keep: stays filled after the first time
+        onLeave: function (self) { if (cfg.keep) { self.kill(); if (fill) fill.finish(); } }   // keep: stays filled after the first time (kill resets the timeline, so set the finished state AFTER it)
       }
     });
-    pt.addSteps(tl, idx + 1);
+    fill = pt.addSteps(tl, idx + 1);
   });
 }
 
