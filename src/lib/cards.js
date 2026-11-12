@@ -201,6 +201,14 @@ function stage(cfg) {
     pt.addSteps(tl, i + 1, T + 1, 0.5);                                // starts when the card has landed; tl.duration() is now the end of this card's fill
   });
   if (cfg.hold) tl.to({}, { duration: cfg.hold });
+  // EXIT: a pinned section is perfectly still, then the instant the pin lets go it moves at full scroll speed: that speed jump reads as a jerk
+  // (the position itself is continuous). So the last `exit` units of the pin ease the content upward with an ease-in whose end speed equals the
+  // scroll speed (distance = half the exit's scroll length, quadratic ease-in): it is already moving at scroll speed when the pin releases.
+  const exit = cfg.exit != null ? cfg.exit : 1;
+  if (exit > 0) {
+    const L = exit * (cfg.length || 2200) / (tl.duration() + exit);   // scroll pixels covered by the exit segment
+    tl.to(Array.prototype.slice.call(pinEl.children), { y: -L / 2, ease: "power1.in", duration: exit });
+  }
 }
 
 // PHONE version: the step cards are a horizontal scroll-snap slider. Whenever a card becomes the active slide its step
