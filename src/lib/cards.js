@@ -54,7 +54,22 @@ function fan(cfg) {
 //   enter: top 0 -> +P (ease-in, before the lock) then y 0 -> -P (ease-out, after the lock)        [P = R/8]
 //   exit : y -P -> -(P+Q) (ease-in, before the release) then top +P -> +(P+Q) (ease-out, after)    [Q = R_exit/8]
 // Call it AFTER the pin timeline is built (it needs the total length to turn units into scroll px).
-function easePin(tl, st, pinEl, length, cfg) {
+// ONCE: after the first complete pass the pin is removed for good (so scrolling back shows all the content, no sticky/pinned scrolling). The pin
+// adds L = end - start px of scroll space; removing it moves everything below up by L, so the scroll position is moved up by L in the SAME frame
+// (and Lenis's internal position/target too, so the momentum is not cut) and nothing visibly jumps. Killing the triggers reverts the pin and the
+// animations to the natural (finished) layout; `after` re-applies anything that revert resets (step dots).
+function releasePin(st, outerSt, after) {
+  const lenis = window.lenis, L = st.end - st.start, y = window.scrollY;
+  const target = lenis ? lenis.targetScroll : 0, anim = lenis ? lenis.animatedScroll : 0;
+  outerSt.kill(); st.kill();
+  if (after) after();
+  window.scrollTo(0, y - L);
+  if (lenis) { lenis.animatedScroll = anim - L; lenis.targetScroll = target - L; }
+  window.ScrollTrigger.update();
+  window.ScrollTrigger.refresh();
+}
+
+function easePin(tl, st, pinEl, length, cfg, after) {
   const gsap = window.gsap;
   const enter = cfg.enter != null ? cfg.enter : 1, exit = cfg.exit != null ? cfg.exit : 1;
   const kids = Array.prototype.slice.call(pinEl.children);
@@ -69,7 +84,8 @@ function easePin(tl, st, pinEl, length, cfg) {
     scrollTrigger: {
       trigger: pinEl, scrub: true, invalidateOnRefresh: true,
       start: function () { return st.start - Hin; }, end: function () { return st.end + Hout; },
-      refreshPriority: (st.vars.refreshPriority || 9) - 1             // refresh after the pin trigger so st.start / st.end are current
+      refreshPriority: (st.vars.refreshPriority || 9) - 1,            // refresh after the pin trigger so st.start / st.end are current
+      onLeave: function (self) { if (cfg.once) releasePin(st, self, after); }   // once: the exit hump is over, the content is back at zero offset: release the pin for good
     }
   })
     .fromTo(kids, { top: 0 }, { top: P, ease: "power1.in", duration: Hin }, 0)
@@ -257,7 +273,7 @@ function stage(cfg) {
     });
   }
   if (cfg.hold) tl.to({}, { duration: cfg.hold });
-  easePin(tl, tl.scrollTrigger, pinEl, cfg.length || 2200, cfg);   // enter + exit speed ramps (see easePin)
+  easePin(tl, tl.scrollTrigger, pinEl, cfg.length || 2200, cfg, function () { latches.forEach(function (l) { l.finish(); }); });   // enter + exit speed ramps (see easePin); `after` keeps the dots filled once the pin is released
 }
 
 // PHONE version: the step cards are a horizontal scroll-snap slider. Whenever a card becomes the active slide its step
@@ -336,7 +352,10 @@ function stack(cfg) {
   els.forEach(function (e, i) { e.style.position = e.style.position || "relative"; e.style.zIndex = String(els.length - i); });
   gsap.from(els.slice(1), {
     x: function (i, el) { return left0 - el.getBoundingClientRect().left; }, ease: "none",
-    scrollTrigger: { trigger: parentOf(cfg, els), start: "top 85%", end: "top 30%", scrub: 0.8 }
+    scrollTrigger: {
+      trigger: parentOf(cfg, els), start: "top 85%", end: "top 30%", scrub: 0.8,
+      onLeave: function (self) { if (cfg.once) self.kill(); }       // once: after the first slide-out the cards stay in place (killing reverts them to their natural, finished layout)
+    }
   });
 }
 

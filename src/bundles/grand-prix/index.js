@@ -96,12 +96,12 @@ init({
   // How It Works cards climb into place as you scroll, Proof From the Track cards slide out from behind the first
   cards: [
     {
-      deck:    { items: ".rb", pin: ".slow", start: "center center", length: 2200, hold: 0.8, enter: 1, exit: 1 },   // roadblock cards: a pinned deck dealt out card by card as you scroll
+      deck:    { items: ".rb", pin: ".slow", start: "center center", length: 2200, hold: 0.8, enter: 1, exit: 1, once: true },   // roadblock cards: a pinned deck dealt out card by card as you scroll
       stagger: { items: ".vc", container: ".vgrid" },
       stickFill: { items: ".st", container: ".steps-row", track: ".track", dot: ".dot", dotOn: ".dot-on", seg: ".seg", keep: true },   // How It Works: sticky stair-step cards are CSS (as on Halloween); this fills each card's steps on its turn
       // How It Works, whole section pinned (heading + sub-heading + cards stay on screen while the cards climb in one by one, then a short hold). Only when the window is >= 720px tall; shorter windows keep the sticky stair-step above.
-      stage:   { items: ".st", container: ".steps-row", pin: ".steps", track: ".track", dot: ".dot", dotOn: ".dot-on", seg: ".seg", length: 2650, hold: 1, enter: 1, exit: 1, minHeight: 720, keep: true },
-      stack:   { items: ".rc", container: ".res-cards" },
+      stage:   { items: ".st", container: ".steps-row", pin: ".steps", track: ".track", dot: ".dot", dotOn: ".dot-on", seg: ".seg", length: 2650, hold: 1, enter: 1, exit: 1, minHeight: 720, keep: true, once: true },
+      stack:   { items: ".rc", container: ".res-cards", once: true },
       // Phones (sliders): each card row rises + fades in, one card after another, when its section scrolls into view. (.vc already does this via stagger above.)
       slideUp: [
         { items: ".rb", container: ".slow-cards" },
