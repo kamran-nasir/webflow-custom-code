@@ -44,21 +44,36 @@ function fan(cfg) {
   });
 }
 
-// PIN EASING (shared by deck and stage). A pinned section is perfectly still, while the page around it moves at full scroll speed, so the
-// speed jumps at BOTH ends of the pin (1 -> 0 when it locks, 0 -> 1 when it lets go; scrolling back up it is the same in reverse). The
-// positions are continuous, the SPEED is not, and that reads as a jerk. Fix: ease the section's children by a distance of half the ramp's scroll
-// length with a quadratic ease, so the on-screen speed ramps smoothly instead of jumping:
-//   enter: children start `enter` units' worth of scroll LOW (y = +L/2) and rise to 0 with ease-out, so at the lock they are still moving up at
-//          scroll speed and decelerate to rest (before the lock they sit still inside the moving container: total speed 1 -> 1 -> 0 smoothly);
-//   exit:  the last `exit` units move them up by L/2 with ease-in, so they reach scroll speed exactly when the pin lets go.
-// Call it AFTER the timeline is built: L = units * scroll length / total units.
-function easePin(tl, pinEl, length, cfg) {
+// PIN EASING (shared by deck and stage). A pinned section is perfectly still while the page around it moves at full scroll speed, so the SPEED
+// jumps at both ends of the pin (1 -> 0 when it locks, 0 -> 1 when it lets go; scrolling back up it is the same in reverse). Positions are
+// continuous, speed is not, and that reads as a jerk. To ramp the speed smoothly the content must lag the page a little around each edge:
+// over a window of R scroll px centred on the edge (R/2 before it, R/2 after) its offset follows a quadratic hump that peaks at R/8 at the edge
+// and is ZERO outside the window, so nothing is left displaced (no extra gaps above/below the section). The two halves use different CSS
+// properties so they never fight: BEFORE/AFTER the pin the offset is `top` (children are made position:relative; one scrubbed timeline spans
+// the whole range), INSIDE the pin it is `y` (the pin timeline). `top` + `y` sum to the hump; top keeps its end value and y cancels it.
+//   enter: top 0 -> +P (ease-in, before the lock) then y 0 -> -P (ease-out, after the lock)        [P = R/8]
+//   exit : y -P -> -(P+Q) (ease-in, before the release) then top +P -> +(P+Q) (ease-out, after)    [Q = R_exit/8]
+// Call it AFTER the pin timeline is built (it needs the total length to turn units into scroll px).
+function easePin(tl, st, pinEl, length, cfg) {
   const gsap = window.gsap;
   const enter = cfg.enter != null ? cfg.enter : 1, exit = cfg.exit != null ? cfg.exit : 1;
   const kids = Array.prototype.slice.call(pinEl.children);
-  const perUnit = length / (tl.duration() + exit);                       // scroll px per timeline unit (the exit adds `exit` units at the end)
-  if (enter > 0) tl.fromTo(kids, { y: enter * perUnit / 2 }, { y: 0, ease: "power1.out", duration: enter }, 0);
-  if (exit > 0) tl.to(kids, { y: -exit * perUnit / 2, ease: "power1.in", duration: exit }, tl.duration());
+  kids.forEach(function (k) { if (getComputedStyle(k).position === "static") gsap.set(k, { position: "relative" }); });
+  const perUnit = length / (tl.duration() + exit / 2);                 // scroll px per timeline unit (the exit's in-pin half adds exit/2 units)
+  const Hin = enter * perUnit / 2, Hout = exit * perUnit / 2;           // half-window lengths in scroll px
+  const P = Hin / 4, Q = Hout / 4;                                      // peak offsets
+  if (enter > 0) tl.fromTo(kids, { y: 0 }, { y: -P, ease: "power1.out", duration: enter / 2 }, 0);
+  if (exit > 0) tl.to(kids, { y: -(P + Q), ease: "power1.in", duration: exit / 2 }, tl.duration());
+  gsap.timeline({
+    defaults: { ease: "none" },
+    scrollTrigger: {
+      trigger: pinEl, scrub: true, invalidateOnRefresh: true,
+      start: function () { return st.start - Hin; }, end: function () { return st.end + Hout; },
+      refreshPriority: (st.vars.refreshPriority || 9) - 1             // refresh after the pin trigger so st.start / st.end are current
+    }
+  })
+    .fromTo(kids, { top: 0 }, { top: P, ease: "power1.in", duration: Hin }, 0)
+    .fromTo(kids, { top: P }, { top: P + Q, ease: "power1.out", duration: Hout, immediateRender: false }, Hin + length);
 }
 
 function deck(cfg) {
@@ -88,7 +103,7 @@ function deck(cfg) {
   });
   // HOLD: an empty tail so the pin keeps going after the last card has landed. Without it the pin releases on the very frame the last card settles and the next section slides in over it. hold is in timeline units (the deal spacing is 0.9, one card's move is 1); scroll length per unit = length / total, so raise `length` by the same share to keep the dealing pace.
   if (cfg.hold) tl.to({}, { duration: cfg.hold });
-  easePin(tl, (cfg.pin && document.querySelector(cfg.pin)) || els[0].parentElement, cfg.length || 1500, cfg);
+  easePin(tl, tl.scrollTrigger, (cfg.pin && document.querySelector(cfg.pin)) || els[0].parentElement, cfg.length || 1500, cfg);
 }
 
 // Prepares one card's step track (faint track + a fill over each segment) and returns a function that adds
@@ -219,7 +234,7 @@ function stage(cfg) {
     pt.addSteps(tl, i + 1, T + 1, 0.5);                                // starts when the card has landed; tl.duration() is now the end of this card's fill
   });
   if (cfg.hold) tl.to({}, { duration: cfg.hold });
-  easePin(tl, pinEl, cfg.length || 2200, cfg);   // enter + exit speed ramps (see easePin)
+  easePin(tl, tl.scrollTrigger, pinEl, cfg.length || 2200, cfg);   // enter + exit speed ramps (see easePin)
 }
 
 // PHONE version: the step cards are a horizontal scroll-snap slider. Whenever a card becomes the active slide its step
