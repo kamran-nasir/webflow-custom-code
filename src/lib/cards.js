@@ -58,17 +58,48 @@ function fan(cfg) {
 // adds L = end - start px of scroll space; removing it moves everything below up by L, so the scroll position is moved up by L in the SAME frame
 // (and Lenis's internal position/target too, so the momentum is not cut) and nothing visibly jumps. Killing the triggers reverts the pin and the
 // animations to the natural (finished) layout; `after` re-applies anything that revert resets (step dots).
-function releasePin(st, outerSt, after) {
-  const lenis = window.lenis, L = st.end - st.start, y = window.scrollY;
+// Registry of pins that are still waiting for their first pass (see anchor handling below).
+const oncePins = [];
+let anchorHandlerInstalled = false;
+function installAnchorRelease() {
+  if (anchorHandlerInstalled) return;
+  anchorHandlerInstalled = true;
+  // A menu/anchor click jumps over pins that are ahead of the viewport. Lenis computes the destination ONCE (with the pins' scroll space in
+  // it), so if a pin were released mid-flight the page would land too far down. So release every unplayed pin that lies between the viewport
+  // and the target FIRST (nothing to compensate: it is below the viewport), and let Lenis compute the destination against the final layout.
+  // A target inside a pinned section is left alone (that pin stays, the link lands on it).
+  document.addEventListener("click", function (e) {
+    const a = e.target && e.target.closest ? e.target.closest('a[href^="#"]') : null;
+    if (!a) return;
+    const id = a.getAttribute("href");
+    if (!id || id.length < 2) return;
+    let target = null;
+    try { target = document.querySelector(id); } catch (err) { return; }
+    if (!target) return;
+    const tTop = target.getBoundingClientRect().top + window.scrollY, y = window.scrollY;
+    oncePins.slice().forEach(function (p) {
+      if (p.done) return;
+      if (p.st.start > y && p.st.end <= tTop - 1) p.release(true);
+    });
+  }, true);
+}
+
+// ONCE: after the first complete pass the pin is removed for good (so scrolling back shows all the content, no sticky/pinned scrolling). The pin
+// adds L = end - start px of scroll space; removing it moves everything below it up by L, so when the user is BELOW the pin the scroll position is
+// moved up by L in the SAME frame (and Lenis's internal position/target too, so the momentum is not cut) and nothing visibly jumps. Killing the
+// triggers reverts the pin and the animations to the natural (finished) layout; `after` re-applies anything that revert resets (step dots).
+// noShift = true when the pin is still below the viewport (anchor click): nothing above it moves, so no compensation.
+function releasePin(st, outerSt, after, noShift) {
+  const lenis = window.lenis, L = noShift ? 0 : st.end - st.start, y = window.scrollY;
   const target = lenis ? lenis.targetScroll : 0, anim = lenis ? lenis.animatedScroll : 0;
-  const programmatic = !!(lenis && lenis.animate && lenis.animate.isRunning);   // a lenis.scrollTo() animation (e.g. a menu anchor click) keeps its OLD destination: re-aim it below
   outerSt.kill(); st.kill();
   if (after) after();
-  window.scrollTo(0, y - L);
-  if (lenis) { lenis.animatedScroll = anim - L; lenis.targetScroll = target - L; }
+  if (L) {
+    window.scrollTo(0, y - L);
+    if (lenis) { lenis.animatedScroll = anim - L; lenis.targetScroll = target - L; }
+  }
   window.ScrollTrigger.update();
   window.ScrollTrigger.refresh();
-  if (programmatic) { try { lenis.scrollTo(Math.max(0, target - L), { duration: 0.8 }); } catch (e) {} }   // same destination (the content it pointed at moved up by L), from where we are now
 }
 
 function easePin(tl, st, pinEl, length, cfg, after) {
@@ -81,17 +112,20 @@ function easePin(tl, st, pinEl, length, cfg, after) {
   const P = Hin / 4, Q = Hout / 4;                                      // peak offsets
   if (enter > 0) tl.fromTo(kids, { y: 0 }, { y: -P, ease: "power1.out", duration: enter / 2 }, 0);
   if (exit > 0) tl.to(kids, { y: -(P + Q), ease: "power1.in", duration: exit / 2 }, tl.duration());
-  gsap.timeline({
+  const reg = { st: st, done: false, release: null };
+  if (cfg.once) { installAnchorRelease(); oncePins.push(reg); }
+  const outerTl = gsap.timeline({
     defaults: { ease: "none" },
     scrollTrigger: {
       trigger: pinEl, scrub: true, invalidateOnRefresh: true,
       start: function () { return st.start - Hin; }, end: function () { return st.end + Hout; },
       refreshPriority: (st.vars.refreshPriority || 9) - 1,            // refresh after the pin trigger so st.start / st.end are current
-      onLeave: function (self) { if (cfg.once) releasePin(st, self, after); }   // once: the exit hump is over, the content is back at zero offset: release the pin for good
+      onLeave: function (self) { if (cfg.once && !reg.done) { reg.done = true; releasePin(st, self, after); } }   // once: the exit hump is over, the content is back at zero offset: release the pin for good
     }
   })
     .fromTo(kids, { top: 0 }, { top: P, ease: "power1.in", duration: Hin }, 0)
     .fromTo(kids, { top: P }, { top: P + Q, ease: "power1.out", duration: Hout, immediateRender: false }, Hin + length);
+  reg.release = function (noShift) { if (reg.done) return; reg.done = true; releasePin(st, outerTl.scrollTrigger, after, noShift); };
 }
 
 function deck(cfg) {
