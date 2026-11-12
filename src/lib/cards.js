@@ -190,7 +190,7 @@ function stage(cfg) {
     defaults: { ease: "none" },
     scrollTrigger: {
       trigger: pinEl, start: cfg.start || "center center", end: "+=" + (cfg.length || 2200),
-      pin: true, scrub: 0.8, anticipatePin: 1, invalidateOnRefresh: true,
+      pin: true, scrub: cfg.scrub != null ? cfg.scrub : 0.15, anticipatePin: 1, invalidateOnRefresh: true,   // low scrub lag: Lenis already smooths the scroll, and a long lag keeps the exit moving AFTER the pin releases (speed overshoot)
       refreshPriority: 9
     }
   });
