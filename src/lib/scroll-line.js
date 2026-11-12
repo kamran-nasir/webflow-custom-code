@@ -6,7 +6,7 @@ import { hasGsap, prefersReducedMotion, toArray, whenReady } from "./core.js";
    scrolls through the viewport (scrubbed: scroll back up and it shrinks again). Layout does not move,
    the border keeps its width, it just turns transparent.
 
-   scrollLine({ items: ".block-with-left-border", start: "top 80%", end: "bottom 55%", scrub: 0.6 })
+   scrollLine({ items: ".block-with-left-border", start: "top 80%", end: "bottom 55%", scrub: 0.6, keep: false })   // keep: true = stays drawn after the first time
 
    Reduced motion / no GSAP: the border is left alone. */
 export function scrollLine(opts) {
@@ -28,9 +28,12 @@ export function scrollLine(opts) {
       bar.style.cssText = "position:absolute;top:0;bottom:0;left:" + (-w) + "px;width:" + w + "px;background:" + cs.borderLeftColor + ";transform-origin:top;pointer-events:none;";
       el.appendChild(bar);
       el.style.borderLeftColor = "transparent";
-      gsap.fromTo(bar, { scaleY: 0 }, {
+      const tw = gsap.fromTo(bar, { scaleY: 0 }, {
         scaleY: 1, ease: "none",
-        scrollTrigger: { trigger: (d.trigger && el.closest(d.trigger)) || el, start: d.start || opts.start || "top 80%", end: d.end || opts.end || "bottom 55%", scrub: opts.scrub != null ? opts.scrub : 0.6 }
+        scrollTrigger: {
+          trigger: (d.trigger && el.closest(d.trigger)) || el, start: d.start || opts.start || "top 80%", end: d.end || opts.end || "bottom 55%", scrub: opts.scrub != null ? opts.scrub : 0.6,
+          onLeave: function (self) { if (opts.keep) { tw.progress(1); self.kill(); } }   // keep: once drawn, it stays drawn when you scroll back
+        }
       });
     });
     window.ScrollTrigger.refresh();

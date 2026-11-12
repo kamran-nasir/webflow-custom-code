@@ -153,6 +153,14 @@ function prepTrack(card, cfg) {
         if (on) fillDot(tl, dots[k], t, 0.5 * sp);
         t += 0.5 * sp;
       }
+      // returns where this fill ends in tl and a function that sets every one of its steps to the finished state (used by `keep`)
+      return {
+        end: t,
+        finish: function () {
+          gsap.set(fills.slice(0, Math.max(0, n - 1)), { scaleX: 1 });
+          if (on) gsap.set(dots.slice(0, n), { backgroundColor: onBg, borderColor: onBorder });
+        }
+      };
     }
   };
 }
@@ -194,7 +202,10 @@ function stickFill(cfg) {
     const margin = parseFloat(getComputedStyle(card).marginTop) || 0;
     const tl = gsap.timeline({
       defaults: { ease: "none" },
-      scrollTrigger: { trigger: row, start: "top+=" + margin + " " + (cfg.from || "78%"), end: "top+=" + margin + " " + (cfg.to || "38%"), scrub: cfg.scrub != null ? cfg.scrub : 0.6 }
+      scrollTrigger: {
+        trigger: row, start: "top+=" + margin + " " + (cfg.from || "78%"), end: "top+=" + margin + " " + (cfg.to || "38%"), scrub: cfg.scrub != null ? cfg.scrub : 0.6,
+        onLeave: function (self) { if (cfg.keep) { tl.progress(1); self.kill(); } }   // keep: stays filled after the first time
+      }
     });
     pt.addSteps(tl, idx + 1);
   });
@@ -227,12 +238,23 @@ function stage(cfg) {
       refreshPriority: 9
     }
   });
+  const latches = [];
   els.forEach(function (card, i) {                                     // strictly one card at a time: climb, then its steps fill to the end, THEN the next card starts
     const T = i ? tl.duration() + (cfg.gap != null ? cfg.gap : 0.15) : 0;
     const pt = prepTrack(card, Object.assign({ hollowFirst: true }, cfg));
     tl.fromTo(card, { y: rise, rotation: tilt[i] * 2 }, { y: 0, rotation: tilt[i], duration: 1, ease: "power2.out" }, T);
-    pt.addSteps(tl, i + 1, T + 1, 0.5);                                // starts when the card has landed; tl.duration() is now the end of this card's fill
+    const fill = pt.addSteps(tl, i + 1, T + 1, 0.5);                   // starts when the card has landed; tl.duration() is now the end of this card's fill
+    latches.push({ end: fill.end, finish: fill.finish, done: false });
   });
+  if (cfg.keep) {                                                      // keep: a card's steps stay filled after the first time (the cards themselves still move back with the scroll)
+    tl.eventCallback("onUpdate", function () {
+      const t = tl.time();
+      latches.forEach(function (l) {
+        if (!l.done && t >= l.end - 0.001) l.done = true;
+        if (l.done && t < l.end) l.finish();                          // runs after the tweens rendered, so it wins over the reversed fill
+      });
+    });
+  }
   if (cfg.hold) tl.to({}, { duration: cfg.hold });
   easePin(tl, tl.scrollTrigger, pinEl, cfg.length || 2200, cfg);   // enter + exit speed ramps (see easePin)
 }

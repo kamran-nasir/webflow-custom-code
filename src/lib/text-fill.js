@@ -8,6 +8,7 @@ import { hasGsap, prefersReducedMotion, toArray, whenReady } from "./core.js";
    textFill({ items: ".intro-p",              // the paragraph(s) to fill
               trigger: ".intro-text",          // optional: the element whose scroll range drives it (default: the paragraph's parent)
               from: 0.5,                       // starting opacity
+              keep: true,                      // stays filled after the first time (default false: it empties again when you scroll back)
               start: "top 80%", end: "bottom 55%", scrub: 0.6 })   // keep these equal to the scrollLine's
 
    Reduced motion / no GSAP: the text stays fully visible. */
@@ -53,10 +54,14 @@ export function textFill(opts) {
       const per = 1 / words.length;
       const pin = d.pin && el.closest(d.pin);                  // desktop: hold the section while the text fills (more scroll, slower)
       if (pin) window.ScrollTrigger.create({ trigger: pin, start: d.start, end: d.end, pin: true, anticipatePin: 1 });
-      gsap.timeline({
+      const tl = gsap.timeline({
         defaults: { ease: "none" },
-        scrollTrigger: { trigger: pin || trigger, start: d.start || opts.start || "top 80%", end: d.end || opts.end || "bottom 55%", scrub: opts.scrub != null ? opts.scrub : 0.6 }
-      }).to(words, { opacity: 1, duration: per, stagger: per });
+        scrollTrigger: {
+          trigger: pin || trigger, start: d.start || opts.start || "top 80%", end: d.end || opts.end || "bottom 55%", scrub: opts.scrub != null ? opts.scrub : 0.6,
+          onLeave: function (self) { if (opts.keep) { tl.progress(1); self.kill(); } }   // keep: once filled, it stays filled when you scroll back
+        }
+      });
+      tl.to(words, { opacity: 1, duration: per, stagger: per });
     });
     window.ScrollTrigger.refresh();
   });

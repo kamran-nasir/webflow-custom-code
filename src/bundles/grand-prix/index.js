@@ -56,11 +56,11 @@ init({
   // the text, so the text is fully filled when its bottom is at 88% of the viewport), so the next section only appears
   // after the text animation is complete. The FAQ and CTA rules use the default range.
   scrollLine: [
-    { items: ".faq-col-left, .cta-col-left" },
-    { items: ".intro-text, .intro-body", start: "top 88%", end: "bottom 88%" }   // .intro-body carries the rule on tablet/phone (it wraps image + copy); on desktop it is display:contents and skipped
+    { items: ".faq-col-left, .cta-col-left", keep: true },
+    { items: ".intro-text, .intro-body", start: "top 88%", end: "bottom 88%", keep: true }   // .intro-body carries the rule on tablet/phone (it wraps image + copy); on desktop it is display:contents and skipped
   ],
   // The intro paragraph starts at 50% opacity and fills word by word over the same range as its rule.
-  textFill: { items: ".intro-p", image: ".intro-img", trigger: ".intro-text", start: "top 88%", end: "bottom 88%" },
+  textFill: { items: ".intro-p", image: ".intro-img", trigger: ".intro-text", start: "top 88%", end: "bottom 88%", keep: true },
 
   // Artwork from the Figma file ("Copy as SVG"): eyebrow icons, the chevron on the card links, and the vertical square pattern
   decor: {
@@ -98,9 +98,9 @@ init({
     {
       deck:    { items: ".rb", pin: ".slow", start: "center center", length: 2200, hold: 0.8, enter: 1, exit: 1 },   // roadblock cards: a pinned deck dealt out card by card as you scroll
       stagger: { items: ".vc", container: ".vgrid" },
-      stickFill: { items: ".st", container: ".steps-row", track: ".track", dot: ".dot", dotOn: ".dot-on", seg: ".seg" },   // How It Works: sticky stair-step cards are CSS (as on Halloween); this fills each card's steps on its turn
+      stickFill: { items: ".st", container: ".steps-row", track: ".track", dot: ".dot", dotOn: ".dot-on", seg: ".seg", keep: true },   // How It Works: sticky stair-step cards are CSS (as on Halloween); this fills each card's steps on its turn
       // How It Works, whole section pinned (heading + sub-heading + cards stay on screen while the cards climb in one by one, then a short hold). Only when the window is >= 720px tall; shorter windows keep the sticky stair-step above.
-      stage:   { items: ".st", container: ".steps-row", pin: ".steps", track: ".track", dot: ".dot", dotOn: ".dot-on", seg: ".seg", length: 2650, hold: 1, enter: 1, exit: 1, minHeight: 720 },
+      stage:   { items: ".st", container: ".steps-row", pin: ".steps", track: ".track", dot: ".dot", dotOn: ".dot-on", seg: ".seg", length: 2650, hold: 1, enter: 1, exit: 1, minHeight: 720, keep: true },
       stack:   { items: ".rc", container: ".res-cards" },
       // Phones (sliders): each card row rises + fades in, one card after another, when its section scrolls into view. (.vc already does this via stagger above.)
       slideUp: [
