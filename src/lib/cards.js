@@ -75,7 +75,7 @@ function deck(cfg) {
     scrollTrigger: {
       trigger: (cfg.pin && document.querySelector(cfg.pin)) || els[0].parentElement,
       start: cfg.start || "top top", end: "+=" + (cfg.length || 1500),
-      pin: true, scrub: cfg.scrub != null ? cfg.scrub : 0.15, anticipatePin: 1,   // low scrub lag (Lenis already smooths the scroll)
+      pin: true, scrub: cfg.scrub != null ? cfg.scrub : true,   // scrub:true = follows the scroll exactly (Lenis already smooths it); any lag delays the enter/exit ease and re-creates the speed jump. No anticipatePin: it locks the pin a few px early, which stops the content dead before the enter ease can start.
       refreshPriority: 10                         // pins refresh FIRST, so every trigger below them is measured after their spacing
     }
   });
@@ -208,7 +208,7 @@ function stage(cfg) {
     defaults: { ease: "none" },
     scrollTrigger: {
       trigger: pinEl, start: cfg.start || "center center", end: "+=" + (cfg.length || 2200),
-      pin: true, scrub: cfg.scrub != null ? cfg.scrub : 0.15, anticipatePin: 1, invalidateOnRefresh: true,   // low scrub lag: Lenis already smooths the scroll, and a long lag keeps the exit moving AFTER the pin releases (speed overshoot)
+      pin: true, scrub: cfg.scrub != null ? cfg.scrub : true, invalidateOnRefresh: true,   // scrub:true and no anticipatePin: see deck()
       refreshPriority: 9
     }
   });
