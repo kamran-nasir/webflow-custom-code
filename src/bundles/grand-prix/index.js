@@ -115,7 +115,10 @@ init({
   faq: { items: ".acc-item", icon: ".acc-icon", single: true, collapse: "(max-width: 767px)", svg: { size: 22, stroke: 1.75 }, openBg: "var(--neutral--gray-200, #E6E6E6)" },
 
   finishLine: true,
+  // The section after the pinned roadblock deck fades in as it arrives (no hard grey edge when the pin lets go); its stripes then sprint in later.
+  sectionIn: { items: ".values", start: "top 92%", duration: 0.9 },
   sprintLines: {
+    start: "top 55%",
     items: ".roads",
     svg: { width: 3200, height: 668, stripes: [
       { color: "var(--brand--secondary, #29615A)", points: [[2743.9, 0], [2829.5, 0], [313.7, 668], [106.2, 668]] },

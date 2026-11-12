@@ -16,8 +16,9 @@ import { scrollParallax, mouseParallax } from "./parallax.js";
 import { heroIntro } from "./hero-intro.js";
 import { finishLine } from "./finish-line.js";
 import { sprintLines } from "./sprint-lines.js";
+import { sectionIn } from "./section-in.js";
 
-export { scrollLine, textFill, sliderNav, hoverFx, decor, magnet, videoExpand, hideHeader, faq, cards, smoothScroll, reveals, titleSlide, scrollParallax, mouseParallax, heroIntro, finishLine, sprintLines };
+export { scrollLine, textFill, sliderNav, hoverFx, decor, magnet, videoExpand, hideHeader, faq, cards, smoothScroll, reveals, titleSlide, scrollParallax, mouseParallax, heroIntro, finishLine, sprintLines, sectionIn };
 export * from "./core.js";
 
 /* One call per campaign. Turn on only what the page uses:
@@ -62,6 +63,7 @@ export function init(cfg) {
   if (cfg.videoExpand) videoExpand(cfg.videoExpand);    // video opens in place at full width
   if (cfg.decor) decor(cfg.decor);                      // icons / patterns copied from the design
   if (cfg.hoverFx) hoverFx(cfg.hoverFx);               // link underline draw + button text roll on hover
+  if (cfg.sectionIn) [].concat(cfg.sectionIn === true ? {} : cfg.sectionIn).forEach(sectionIn);   // whole section fades in as it arrives (before its own contents animate)
   if (cfg.sprintLines) sprintLines(cfg.sprintLines);   // before parallax: it swaps the <img> for an SVG
   if (cfg.scrollParallax) scrollParallax(cfg.scrollParallax === true ? {} : cfg.scrollParallax);
   if (cfg.mouseParallax) mouseParallax(cfg.mouseParallax === true ? {} : cfg.mouseParallax);
