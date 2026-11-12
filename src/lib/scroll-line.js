@@ -32,7 +32,7 @@ export function scrollLine(opts) {
         scaleY: 1, ease: "none",
         scrollTrigger: {
           trigger: (d.trigger && el.closest(d.trigger)) || el, start: d.start || opts.start || "top 80%", end: d.end || opts.end || "bottom 55%", scrub: opts.scrub != null ? opts.scrub : 0.6,
-          onLeave: function (self) { if (opts.keep) { self.kill(); gsap.set(bar, { scaleY: 1 }); } }   // keep: once drawn, it stays drawn when you scroll back (kill resets the tween, so set the finished state AFTER it)
+          onLeave: function (self) { if (opts.keep) gsap.delayedCall((opts.scrub != null ? opts.scrub : 0.6) + 0.25, function () { self.kill(); gsap.set(bar, { scaleY: 1 }); }); }   // keep: once drawn, it stays drawn when you scroll back (wait for the scrub to catch up so the end does not snap; kill resets the tween, so set the finished state AFTER it)
         }
       });
     });

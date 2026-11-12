@@ -61,12 +61,14 @@ function fan(cfg) {
 function releasePin(st, outerSt, after) {
   const lenis = window.lenis, L = st.end - st.start, y = window.scrollY;
   const target = lenis ? lenis.targetScroll : 0, anim = lenis ? lenis.animatedScroll : 0;
+  const programmatic = !!(lenis && lenis.animate && lenis.animate.isRunning);   // a lenis.scrollTo() animation (e.g. a menu anchor click) keeps its OLD destination: re-aim it below
   outerSt.kill(); st.kill();
   if (after) after();
   window.scrollTo(0, y - L);
   if (lenis) { lenis.animatedScroll = anim - L; lenis.targetScroll = target - L; }
   window.ScrollTrigger.update();
   window.ScrollTrigger.refresh();
+  if (programmatic) { try { lenis.scrollTo(Math.max(0, target - L), { duration: 0.8 }); } catch (e) {} }   // same destination (the content it pointed at moved up by L), from where we are now
 }
 
 function easePin(tl, st, pinEl, length, cfg, after) {
@@ -221,7 +223,7 @@ function stickFill(cfg) {
       defaults: { ease: "none" },
       scrollTrigger: {
         trigger: row, start: "top+=" + margin + " " + (cfg.from || "78%"), end: "top+=" + margin + " " + (cfg.to || "38%"), scrub: cfg.scrub != null ? cfg.scrub : 0.6,
-        onLeave: function (self) { if (cfg.keep) { self.kill(); if (fill) fill.finish(); } }   // keep: stays filled after the first time (kill resets the timeline, so set the finished state AFTER it)
+        onLeave: function (self) { if (cfg.keep) gsap.delayedCall(0.85, function () { self.kill(); if (fill) fill.finish(); }); }   // keep: stays filled after the first time (wait for the scrub to catch up; kill resets the timeline, so set the finished state AFTER it)
       }
     });
     fill = pt.addSteps(tl, idx + 1);
@@ -354,7 +356,7 @@ function stack(cfg) {
     x: function (i, el) { return left0 - el.getBoundingClientRect().left; }, ease: "none",
     scrollTrigger: {
       trigger: parentOf(cfg, els), start: "top 85%", end: "top 30%", scrub: 0.8,
-      onLeave: function (self) { if (cfg.once) { self.kill(); gsap.set(els.slice(1), { x: 0 }); } }       // once: after the first slide-out the cards stay in place (killing reverts a from() tween to its START state, so set the finished x AFTER it)
+      onLeave: function (self) { if (cfg.once) gsap.delayedCall(1.05, function () { self.kill(); gsap.set(els.slice(1), { x: 0 }); }); }       // once: after the first slide-out the cards stay in place. Wait for the scrub (0.8 s) to catch up so the last part does not snap; killing reverts a from() tween to its START state, so set the finished x AFTER it
     }
   });
 }
