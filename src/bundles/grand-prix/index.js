@@ -96,7 +96,7 @@ init({
   // How It Works cards climb into place as you scroll, Proof From the Track cards slide out from behind the first
   cards: [
     {
-      deck:    { items: ".rb", pin: ".slow", start: "center center", length: 1500 },   // roadblock cards: a pinned deck dealt out card by card as you scroll
+      deck:    { items: ".rb", pin: ".slow", start: "center center", length: 1800, hold: 0.8 },   // roadblock cards: a pinned deck dealt out card by card as you scroll
       stagger: { items: ".vc", container: ".vgrid" },
       stickFill: { items: ".st", container: ".steps-row", track: ".track", dot: ".dot", dotOn: ".dot-on", seg: ".seg" },   // How It Works: sticky stair-step cards are CSS (as on Halloween); this fills each card's steps on its turn
       stack:   { items: ".rc", container: ".res-cards" },

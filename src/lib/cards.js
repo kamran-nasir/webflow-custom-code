@@ -69,6 +69,8 @@ function deck(cfg) {
       rotation: tilt[i % tilt.length]
     }, i * 0.9);
   });
+  // HOLD: an empty tail so the pin keeps going after the last card has landed. Without it the pin releases on the very frame the last card settles and the next section slides in over it. hold is in timeline units (the deal spacing is 0.9, one card's move is 1); scroll length per unit = length / total, so raise `length` by the same share to keep the dealing pace.
+  if (cfg.hold) tl.to({}, { duration: cfg.hold });
 }
 
 // Prepares one card's step track (faint track + a fill over each segment) and returns a function that adds
