@@ -354,7 +354,7 @@ function stack(cfg) {
     x: function (i, el) { return left0 - el.getBoundingClientRect().left; }, ease: "none",
     scrollTrigger: {
       trigger: parentOf(cfg, els), start: "top 85%", end: "top 30%", scrub: 0.8,
-      onLeave: function (self) { if (cfg.once) self.kill(); }       // once: after the first slide-out the cards stay in place (killing reverts them to their natural, finished layout)
+      onLeave: function (self) { if (cfg.once) { self.kill(); gsap.set(els.slice(1), { x: 0 }); } }       // once: after the first slide-out the cards stay in place (killing reverts a from() tween to its START state, so set the finished x AFTER it)
     }
   });
 }
