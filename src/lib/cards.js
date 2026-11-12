@@ -112,13 +112,13 @@ function prepTrack(card, cfg) {
       });
     },
     // scrubbed sequence: fills steps 1..count (dot, segment, dot, ...) across the timeline; scroll back and it empties again
-    addSteps: function (tl, count) {
-      const n = Math.min(count, dots.length);
-      let t = 0;
+    addSteps: function (tl, count, at, speed) {   // at = start position in tl (default 0); speed = duration multiplier (default 1, 0.5 = twice as fast)
+      const sp = speed || 1, n = Math.min(count, dots.length);
+      let t = at || 0;
       for (let k = 0; k < n; k++) {
-        if (k > 0 && fills[k - 1]) { tl.to(fills[k - 1], { scaleX: 1, duration: 1, ease: "none" }, t); t += 1; }
-        if (on) fillDot(tl, dots[k], t, 0.5);
-        t += 0.5;
+        if (k > 0 && fills[k - 1]) { tl.to(fills[k - 1], { scaleX: 1, duration: sp, ease: "none" }, t); t += sp; }
+        if (on) fillDot(tl, dots[k], t, 0.5 * sp);
+        t += 0.5 * sp;
       }
     }
   };
@@ -165,6 +165,42 @@ function stickFill(cfg) {
     });
     pt.addSteps(tl, idx + 1);
   });
+}
+
+// STAGE version (pinned whole section): the section (heading, sub-heading AND the cards) is pinned in the middle of the window.
+// The sticky stair-step layout from Webflow is flattened into one row (inline, reverted when the media query stops matching) and the
+// cards instead climb up into place one by one (scrubbed, low + tilted -> final tilt), each filling its step track (card 1 step 1 ...
+// card 4 steps 1-4). After the last card lands the pin holds for `hold` timeline units so the finished section rests before the next
+// one arrives. Only runs where the whole section fits in the window (see cards(): stage.minHeight); otherwise stickFill is used.
+function stage(cfg) {
+  const gsap = window.gsap, els = toArray(cfg.items);
+  if (els.length < 2) return;
+  const row = parentOf(cfg, els);
+  const pinEl = (cfg.pin && document.querySelector(cfg.pin)) || row.parentElement;
+  const tilt = els.map(function (e) {                                  // final tilt = the CSS rotate on each card (read before it is overwritten)
+    const m = /matrix\(([^)]+)\)/.exec(getComputedStyle(e).transform);
+    if (!m) return 0;
+    const v = m[1].split(",").map(parseFloat);
+    return Math.atan2(v[1], v[0]) * 180 / Math.PI;
+  });
+  gsap.set(row, { minHeight: 0 });                                     // drop the "rest" height used by the sticky layout
+  gsap.set(els, { position: "relative", top: "auto", marginTop: 0 });  // flat row: no sticky, no stair offsets
+  const rise = function () { return window.innerHeight * 0.55 + 40; }; // start below the bottom edge of the window, whatever its height
+  const tl = gsap.timeline({
+    defaults: { ease: "none" },
+    scrollTrigger: {
+      trigger: pinEl, start: cfg.start || "center center", end: "+=" + (cfg.length || 2200),
+      pin: true, scrub: 0.8, anticipatePin: 1, invalidateOnRefresh: true,
+      refreshPriority: 9
+    }
+  });
+  els.forEach(function (card, i) {
+    const T = i * 1.5;
+    const pt = prepTrack(card, Object.assign({ hollowFirst: true }, cfg));
+    tl.fromTo(card, { y: rise, rotation: tilt[i] * 2 }, { y: 0, rotation: tilt[i], duration: 1.2, ease: "power2.out" }, T);
+    pt.addSteps(tl, i + 1, T + 0.6, 0.5);
+  });
+  if (cfg.hold) tl.to({}, { duration: cfg.hold });
 }
 
 // PHONE version: the step cards are a horizontal scroll-snap slider. Whenever a card becomes the active slide its step
@@ -259,9 +295,14 @@ export function cards(opts) {
       if (opts.reveal) reveal(opts.reveal);
       if (opts.stairs) stairs(opts.stairs);
       if (opts.steps) steps(opts.steps);
-      if (opts.stickFill) stickFill(opts.stickFill);
+      if (opts.stickFill && !opts.stage) stickFill(opts.stickFill);   // with `stage`, stickFill only runs on short windows (below)
       if (opts.stack) stack(opts.stack);
     });
+    if (opts.stage) {                                                  // pinned whole section when it fits the window, sticky stair-step otherwise
+      const minH = opts.stage.minHeight || 720;
+      gsap.matchMedia().add(DESKTOP + " and (min-height: " + minH + "px)", function () { stage(opts.stage); });
+      gsap.matchMedia().add(DESKTOP + " and (max-height: " + (minH - 1) + "px)", function () { if (opts.stickFill) stickFill(opts.stickFill); });
+    }
     gsap.matchMedia().add(PHONE, function () {
       if (opts.slideUp) slideUp(opts.slideUp);
       if (opts.stickFill) return slideFill(opts.stickFill);
