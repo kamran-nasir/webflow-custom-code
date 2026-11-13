@@ -131,6 +131,7 @@ init({
       { color: "var(--neutral--gray-350, #C8C8C8)", points: [[3043.7, 0], [3103.4, 0], [971.4, 668], [821, 668]] },
       { color: "var(--brand--accent, #6ED2B4)", points: [[3124.3, 0], [3181.1, 0], [1152.9, 668], [1014.5, 668]] }
     ] },
-    bleed: { top: 400, bottom: 500 }
+    bleed: { top: 400, bottom: 500 },
+    direction: "up", rise: 520, stagger: 0.14   // stripes rise from below, bottom stripe first (was: slide in from the right, top stripe first)
   }
 });

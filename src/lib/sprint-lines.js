@@ -15,6 +15,8 @@ import { hasGsap, prefersReducedMotion, toArray } from "./core.js";
      kick: 700,                                  // how far right each line starts (viewBox units)
      bleed: { top: 400, bottom: 500 },           // extend every stripe past its ends (viewBox units) so it runs
                                                  // off the section edges and no tip/corner shows
+     direction: "up",                            // optional: stripes RISE into place from below, bottom stripe first, then each one above it
+     rise: 520,                                  // ("up" only) how far below each stripe starts (viewBox units)
      start: "top 80%" })                         // ScrollTrigger start
 
    Lines are listed first (back) to last (front); the stagger follows that order. */
@@ -62,10 +64,12 @@ export function sprintLines(cfg) {
 
     // No masks: every stripe keeps its full (bled) length the whole time, so no end or corner is ever visible.
     // The stripes simply slide in sideways, one after another.
-    gsap.set(lines.map(function (l) { return l.poly; }), { x: kick, autoAlpha: 0 });
+    const up = cfg.direction === "up";
+    const rise = cfg.rise != null ? cfg.rise : 520;
+    gsap.set(lines.map(function (l) { return l.poly; }), up ? { y: rise, autoAlpha: 0 } : { x: kick, autoAlpha: 0 });
     const tl = gsap.timeline({ paused: true, scrollTrigger: { trigger: svg, start: cfg.start || "top 80%", once: true } });
-    lines.forEach(function (l, i) {
-      tl.to(l.poly, { x: 0, duration: dur * 1.25, ease: "expo.out" }, i * gap)
+    (up ? lines.slice().reverse() : lines).forEach(function (l, i) {   // "up": the last (lowest) stripe goes first
+      tl.to(l.poly, up ? { y: 0, duration: dur * 1.25, ease: "expo.out" } : { x: 0, duration: dur * 1.25, ease: "expo.out" }, i * gap)
         .to(l.poly, { autoAlpha: 1, duration: dur * 0.3, ease: "none" }, i * gap);
     });
   });
