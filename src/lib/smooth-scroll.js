@@ -1,8 +1,9 @@
-import { prefersReducedMotion } from "./core.js";
+import { prefersReducedMotion, startAtTop } from "./core.js";
 
 // Lenis smooth scroll, kept in sync with ScrollTrigger. Skipped for reduced motion.
 export function smoothScroll(opts) {
   opts = opts || {};
+  startAtTop();
   if (prefersReducedMotion()) return null;
   if (typeof window.Lenis === "undefined") return null;
 

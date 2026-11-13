@@ -1,4 +1,4 @@
-import { marker, registerPlugins, releaseHide } from "./core.js";
+import { marker, registerPlugins, releaseHide, startAtTop } from "./core.js";
 import { scrollLine } from "./scroll-line.js";
 import { textFill } from "./text-fill.js";
 import { sliderNav } from "./slider-nav.js";
@@ -49,6 +49,7 @@ export function init(cfg) {
   cfg = cfg || {};
   marker(cfg.name || "campaign");
   registerPlugins();
+  startAtTop();                                  // a refresh always shows the page from the top (before any pin/intro is set up)
   if (cfg.smoothScroll) smoothScroll(cfg.smoothScroll === true ? {} : cfg.smoothScroll);
   if (cfg.heroIntro) heroIntro(cfg.heroIntro === true ? {} : cfg.heroIntro);
   if (cfg.reveals) reveals(cfg.reveals === true ? {} : cfg.reveals);

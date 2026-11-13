@@ -64,3 +64,14 @@ export function releaseHide() {
 let gate = Promise.resolve();
 export function setGate(promise) { gate = promise; }
 export function afterGate(fn) { gate.then(fn); }
+
+/* A refresh (or back/forward) must show the page from the very top: the browser would otherwise restore the old scroll position
+   while the intro and the pinned sections are being set up. Skipped when the URL has a #hash (the visitor wants that section). */
+let startedAtTop = false;
+export function startAtTop() {
+  if (startedAtTop) return;
+  startedAtTop = true;
+  if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+  if (!location.hash) window.scrollTo(0, 0);
+  window.addEventListener("pageshow", function (e) { if (e.persisted && !location.hash) window.scrollTo(0, 0); });   // back/forward cache restore
+}
