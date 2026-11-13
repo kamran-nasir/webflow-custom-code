@@ -38,7 +38,7 @@ init({
   // Gentle depth as sections scroll (% of the section height).
   scrollParallax: {
     items: [
-      [".intro-img", -4],
+      // .intro-img removed: its drift made the server photo slide off the vertical centre of the intro text while scrolling
       [".roads", 6]
     ]
   },
