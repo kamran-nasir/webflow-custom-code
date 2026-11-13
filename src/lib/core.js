@@ -72,6 +72,9 @@ export function startAtTop() {
   if (startedAtTop) return;
   startedAtTop = true;
   if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+  // ScrollTrigger keeps its OWN memory of the scroll position and re-applies it after load (and switches the browser setting back to "auto"): clear it.
+  if (!location.hash && window.ScrollTrigger && window.ScrollTrigger.clearScrollMemory) window.ScrollTrigger.clearScrollMemory("manual");
   if (!location.hash) window.scrollTo(0, 0);
   window.addEventListener("pageshow", function (e) { if (e.persisted && !location.hash) window.scrollTo(0, 0); });   // back/forward cache restore
+  window.addEventListener("pagehide", function () { if (!location.hash && window.ScrollTrigger && window.ScrollTrigger.clearScrollMemory) window.ScrollTrigger.clearScrollMemory("manual"); });   // do not let it save the position for the next load
 }
