@@ -15,7 +15,9 @@ import { hasGsap, prefersReducedMotion, toArray } from "./core.js";
      kick: 700,                                  // how far right each line starts (viewBox units)
      bleed: { top: 400, bottom: 500 },           // extend every stripe past its ends (viewBox units) so it runs
                                                  // off the section edges and no tip/corner shows
-     direction: "up",                            // optional: stripes RISE into place from below, bottom stripe first, then each one above it
+     direction: "shoot",                         // optional: each stripe SHOOTS along its own length from its bottom end to its top end
+                                                 // (square-cut head, perpendicular to the stripe), the lowest stripe first, then each one above it
+                                                 // ("up" instead lifts the stripes in from below)
      rise: 520,                                  // ("up" only) how far below each stripe starts (viewBox units)
      start: "top 80%" })                         // ScrollTrigger start
 
@@ -62,15 +64,43 @@ export function sprintLines(cfg) {
     img.className = "";                                  // the SVG now carries the layout class
     img.style.display = "none";
 
-    // No masks: every stripe keeps its full (bled) length the whole time, so no end or corner is ever visible.
-    // The stripes simply slide in sideways, one after another.
-    const up = cfg.direction === "up";
+    // "slide"/"up": no masks, every stripe keeps its full (bled) length and just moves into place.
+    // "shoot": each stripe is redrawn as a growing polygon: its tail stays at the bottom end, its head (cut square to the stripe's own
+    // direction) travels to the top end; at the end the exact original polygon is put back.
+    const mode = cfg.direction === "shoot" ? "shoot" : cfg.direction === "up" ? "up" : "slide";
     const rise = cfg.rise != null ? cfg.rise : 520;
-    gsap.set(lines.map(function (l) { return l.poly; }), up ? { y: rise, autoAlpha: 0 } : { x: kick, autoAlpha: 0 });
+    const fmt = function (pts) { return pts.map(function (p) { return p[0].toFixed(1) + "," + p[1].toFixed(1); }).join(" "); };
+    lines.forEach(function (l, i) {
+      l.full = (bt || bb ? bleedPoints(art.stripes[i].points, bt, bb, H) : art.stripes[i].points);
+      if (mode !== "shoot") return;
+      const TL = l.full[0], TR = l.full[1], BR = l.full[2], BL = l.full[3];
+      const bc = [(BL[0] + BR[0]) / 2, (BL[1] + BR[1]) / 2], tc = [(TL[0] + TR[0]) / 2, (TL[1] + TR[1]) / 2];
+      const dx = tc[0] - bc[0], dy = tc[1] - bc[1], len = Math.sqrt(dx * dx + dy * dy);
+      let nx = -dy / len, ny = dx / len;
+      if ((TR[0] - TL[0]) * nx + (TR[1] - TL[1]) * ny < 0) { nx = -nx; ny = -ny; }          // n points from the stripe's left edge to its right edge
+      const half = Math.abs((TR[0] - TL[0]) * nx + (TR[1] - TL[1]) * ny) / 2;
+      l.at = function (t) {
+        const cx = bc[0] + dx * t, cy = bc[1] + dy * t;
+        return [BL, BR, [cx + nx * half, cy + ny * half], [cx - nx * half, cy - ny * half]];
+      };
+      l.t = { v: 0 };
+      l.poly.setAttribute("points", fmt(l.at(0)));
+    });
+    if (mode === "up") gsap.set(lines.map(function (l) { return l.poly; }), { y: rise, autoAlpha: 0 });
+    else if (mode === "slide") gsap.set(lines.map(function (l) { return l.poly; }), { x: kick, autoAlpha: 0 });
     const tl = gsap.timeline({ paused: true, scrollTrigger: { trigger: svg, start: cfg.start || "top 80%", once: true } });
-    (up ? lines.slice().reverse() : lines).forEach(function (l, i) {   // "up": the last (lowest) stripe goes first
-      tl.to(l.poly, up ? { y: 0, duration: dur * 1.25, ease: "expo.out" } : { x: 0, duration: dur * 1.25, ease: "expo.out" }, i * gap)
-        .to(l.poly, { autoAlpha: 1, duration: dur * 0.3, ease: "none" }, i * gap);
+    svg.__sprint = tl;
+    (mode === "slide" ? lines : lines.slice().reverse()).forEach(function (l, i) {   // "up"/"shoot": the last (lowest) stripe goes first
+      if (mode === "shoot") {
+        tl.to(l.t, {
+          v: 1.02, duration: dur, ease: "power2.out",
+          onUpdate: function () { l.poly.setAttribute("points", fmt(l.at(l.t.v))); },
+          onComplete: function () { l.poly.setAttribute("points", fmt(l.full)); }
+        }, i * gap);
+      } else {
+        tl.to(l.poly, mode === "up" ? { y: 0, duration: dur * 1.25, ease: "expo.out" } : { x: 0, duration: dur * 1.25, ease: "expo.out" }, i * gap)
+          .to(l.poly, { autoAlpha: 1, duration: dur * 0.3, ease: "none" }, i * gap);
+      }
     });
   });
 }

@@ -132,6 +132,6 @@ init({
       { color: "var(--brand--accent, #6ED2B4)", points: [[3124.3, 0], [3181.1, 0], [1152.9, 668], [1014.5, 668]] }
     ] },
     bleed: { top: 400, bottom: 500 },
-    direction: "up", rise: 520, stagger: 0.14   // stripes rise from below, bottom stripe first (was: slide in from the right, top stripe first)
+    direction: "shoot", duration: 1.1, stagger: 0.18   // each stripe shoots along its own length, bottom-left to top-right, lowest stripe first (was: slide in from the right, top stripe first)
   }
 });
