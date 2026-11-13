@@ -19,7 +19,7 @@ export function sectionIn(opts) {
       const y = opts.y || 0;
       gsap.set(el, y ? { opacity: 0, y: y } : { opacity: 0 });
       ScrollTrigger.create({
-        trigger: el, start: opts.start || "top 92%", once: true,
+        trigger: el, start: (opts.desktopStart && window.matchMedia("(min-width: 992px)").matches && opts.desktopStart) || opts.start || "top 92%", once: true,
         onEnter: function () { gsap.to(el, { opacity: 1, y: 0, duration: opts.duration != null ? opts.duration : 0.9, ease: "power2.out", clearProps: "opacity,transform" }); }
       });
     });

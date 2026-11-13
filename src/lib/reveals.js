@@ -43,7 +43,8 @@ export function reveals(opts) {
   };
   const exclude = join(DEFAULTS.exclude, opts.exclude);
   const STEP = opts.step != null ? opts.step : DEFAULTS.step;
-  const START = opts.start || DEFAULTS.start;
+  const DESK = window.matchMedia("(min-width: 992px)").matches;   // desktop: reveals wait until the section is well inside the viewport (opts.desktopStart), so a section does not animate while the previous one is still being read
+  const START = (DESK && opts.desktopStart) || opts.start || DEFAULTS.start;
   const included = function (el) { return !el.closest(exclude); };
   const sectionOf = function (el) { return el.closest("section, [data-anim-section]"); };
 
@@ -60,7 +61,7 @@ export function reveals(opts) {
     gsap.to(path, {
       strokeDashoffset: 0, duration: 1.2, ease: "power2.out",
       onStart: function () { gsap.set(path, { autoAlpha: 1 }); },
-      scrollTrigger: { trigger: path, start: "top 85%", toggleActions: "play none none none" }
+      scrollTrigger: { trigger: path, start: (DESK && opts.desktopLineStart) || "top 85%", toggleActions: "play none none none" }
     });
   });
 

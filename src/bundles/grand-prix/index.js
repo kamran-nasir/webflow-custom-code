@@ -30,7 +30,9 @@ init({
     label:   ".tag",
     heading: ".section-title",
     text:    ".intro-p, .slow-intro, .values-sub, .steps-sub, .faq-intro, .cta-p",
-    exclude: ".hero, .nav, .intro-p"
+    exclude: ".hero, .nav, .intro-p",
+    desktopStart: "top 78%",       // desktop only (>=992px): wait until the block is well inside the viewport
+    desktopLineStart: "top 75%"
   },
 
   // Gentle depth as sections scroll (% of the section height).
@@ -118,7 +120,7 @@ init({
 
   finishLine: true,
   // The section after the pinned roadblock deck fades in as it arrives (no hard grey edge when the pin lets go); its stripes then sprint in later.
-  sectionIn: { items: ".values", start: "top 92%", duration: 1, y: 60 },
+  sectionIn: { items: ".values", start: "top 92%", desktopStart: "top 80%", duration: 1, y: 60 },
   sprintLines: {
     start: "top 55%",
     items: ".roads",
